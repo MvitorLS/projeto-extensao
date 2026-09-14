@@ -1,0 +1,102 @@
+\chapter{Diagrama de Conexões e Mapeamento de Pinos do ESP32}
+\label{anexo-pinagem}
+
+O Quadro~\ref{qua:pinagem} apresenta o mapeamento de pinagem física planejado para o microcontrolador ESP32 (placa NodeMCU-32S) para conexão dos sensores, circuitos de proteção e atuador vibrotátil.
+
+\begin{quadro}[htb]
+\centering
+\caption{Mapeamento dos pinos de entrada e saída (GPIO) previsto para o protótipo}
+\label{qua:pinagem}
+\small
+\begin{tabular}{|l|l|l|p{7.5cm}|}
+\hline
+\textbf{Pino ESP32} & \textbf{Direção} & \textbf{Nível} & \textbf{Função e Dispositivo Conectado} \\
+\hline
+GPIO 5 & Saída & 3,3~V & Disparo do sinal de ultrassom (\textit{Trigger}) do HC-SR04. \\
+\hline
+GPIO 18 & Entrada & 3,3~V & Recepção do eco (\textit{Echo}) via divisor resistivo ($1\text{ k}\Omega / 2\text{ k}\Omega$). \\
+\hline
+GPIO 19 & Saída (PWM) & 3,3~V & Controle de modulação háptica na base do transistor NPN 2N2222. \\
+\hline
+VIN / 5V & Alimentação & 5,0~V & Barramento de alimentação do sensor HC-SR04 e do coletor do motor. \\
+\hline
+GND & Referência & 0~V & Referência elétrica comum a todos os módulos e atuadores. \\
+\hline
+\end{tabular}
+\normalsize
+\fonte{Elaborado pelos autores (2026).}
+\end{quadro}
+
+\chapter{Estrutura Preliminar do Firmware Embarcado no ESP32}
+\label{anexo-firmware}
+
+Apresenta-se a seguir a estrutura preliminar de código em C++ planejada para implementação no ESP32 para a leitura do sensor ultrassônico, aplicação de filtro de média móvel e controle da resposta háptica:
+
+\begin{verbatim}
+// Protótipo de Bracelete Inteligente para Pessoas com Baixa Visão
+// IFPR Campus Pinhais - Práticas de Extensão III (2026)
+// Autores: Matheus Vitor Lourenço Schionato e Vairtles Nehisen M. Liel
+
+const int PIN_TRIG = 5;
+const int PIN_ECHO = 18;
+const int PIN_MOTOR = 19;
+
+const int JANELA_FILTRO = 5;
+float historico[JANELA_FILTRO] = {0};
+int indiceAmostra = 0;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PIN_TRIG, OUTPUT);
+  pinMode(PIN_ECHO, INPUT);
+  pinMode(PIN_MOTOR, OUTPUT);
+  digitalWrite(PIN_TRIG, LOW);
+  digitalWrite(PIN_MOTOR, LOW);
+}
+
+float medirDistancia() {
+  digitalWrite(PIN_TRIG, LOW);
+  delayMicroseconds(2);
+  digitalWrite(PIN_TRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(PIN_TRIG, LOW);
+
+  long duracao = pulseIn(PIN_ECHO, HIGH, 30000); // timeout 30ms (~5m)
+  if (duracao == 0) return 400.0; // Sem eco = livre
+
+  float distancia = (duracao * 0.0343) / 2.0;
+  return distancia;
+}
+
+float aplicarFiltro(float novaLeitura) {
+  historico[indiceAmostra] = novaLeitura;
+  indiceAmostra = (indiceAmostra + 1) % JANELA_FILTRO;
+  float soma = 0;
+  for (int i = 0; i < JANELA_FILTRO; i++) {
+    soma += historico[i];
+  }
+  return soma / JANELA_FILTRO;
+}
+
+void loop() {
+  float dBruta = medirDistancia();
+  float dFiltrada = aplicarFiltro(dBruta);
+
+  Serial.printf("Distancia: %.1f cm\n", dFiltrada);
+
+  if (dFiltrada <= 60.0) {
+    // Zona Crítica: Vibração contínua imediata
+    digitalWrite(PIN_MOTOR, HIGH);
+  } else if (dFiltrada <= 120.0) {
+    // Zona de Atenção: Pulso intermitente de alerta
+    digitalWrite(PIN_MOTOR, HIGH);
+    delay(150);
+    digitalWrite(PIN_MOTOR, LOW);
+    delay(350);
+  } else {
+    // Zona Livre: Sem vibração (repouso)
+    digitalWrite(PIN_MOTOR, LOW);
+  }
+  delay(50); // Taxa de atualização ~20 Hz
+}
+\end{verbatim}

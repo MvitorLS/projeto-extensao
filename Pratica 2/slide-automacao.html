@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Metodologia Automatizada — Auditoria de Acessibilidade</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',Arial,sans-serif; background:#ffffff; color:#1f2d24;
+         min-height:100vh; padding:34px 44px; }
+  h1 { font-size:27px; font-weight:700; color:#14502a; }
+  h1 small { display:block; font-size:14px; font-weight:400; color:#5a7a64; margin-top:5px; }
+  .top { border-bottom:3px solid #2e7d32; padding-bottom:14px; margin-bottom:24px;
+         display:flex; justify-content:space-between; align-items:center; gap:20px; }
+  .brand { display:flex; align-items:center; gap:18px; }
+  .brand img { height:54px; }
+  .badge { background:#2e7d32; color:#fff; padding:8px 16px; border-radius:6px;
+           font-size:14px; white-space:nowrap; }
+  .pipeline { display:flex; gap:9px; align-items:stretch; margin-bottom:24px; }
+  .step { flex:1; background:#f1f8f2; border:1px solid #bcdcc2; border-radius:10px;
+          padding:15px 13px; position:relative; }
+  .step.compl { background:#fff8e8; border:1px dashed #d9a93b; }
+  .step .n { position:absolute; top:-12px; left:13px; background:#2e7d32; color:#fff;
+             width:26px; height:26px; border-radius:50%; display:flex; align-items:center;
+             justify-content:center; font-weight:700; font-size:14px; }
+  .step.compl .n { background:#d9a93b; }
+  .step h3 { font-size:15px; margin:6px 0 9px; color:#14502a; }
+  .step.compl h3 { color:#8a6d1e; }
+  .step p { font-size:12.5px; line-height:1.5; color:#33473b; }
+  .step .tag { display:inline-block; margin-top:8px; font-size:10.5px; font-weight:700;
+               color:#fff; background:#d9a93b; padding:3px 9px; border-radius:10px; }
+  .step .tool { display:inline-block; background:#fff; border:1px solid #2e7d32;
+                color:#1b5e20; font-size:11px; padding:3px 8px; border-radius:12px;
+                margin:8px 6px 0 0; font-weight:600; }
+  .arrow { display:flex; align-items:center; color:#2e7d32; font-size:24px; font-weight:700; }
+  .results { display:flex; gap:15px; }
+  .kpi { flex:1; background:#eaf5ec; border-radius:10px; padding:18px; text-align:center;
+         border:1px solid #bcdcc2; }
+  .kpi .num { font-size:36px; font-weight:700; color:#2e7d32; }
+  .kpi .lbl { font-size:12.5px; color:#33473b; margin-top:6px; line-height:1.4; }
+  .kpi.alert { border-color:#e0a3a0; background:#fcecea; }
+  .kpi.alert .num { color:#c0392b; font-size:21px; line-height:1.2; margin-top:6px; }
+  .foot { margin-top:22px; font-size:11.5px; color:#7d8f84; text-align:center; }
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="brand">
+      <img src="logo-ifpr.png" alt="IFPR">
+      <h1>Como a auditoria foi automatizada
+        <small>Acessibilidade Digital — Prefeituras da RM de Curitiba · IFPR Câmpus Pinhais</small>
+      </h1>
+    </div>
+    <div class="badge">5 municípios · 15 páginas</div>
+  </div>
+
+  <div class="pipeline">
+    <div class="step">
+      <span class="n">1</span>
+      <h3>Varredura automatizada</h3>
+      <p>Cada página é aberta por um navegador controlado por script e auditada contra as regras WCAG 2.1 (níveis A e AA).</p>
+      <span class="tool">axe-core 4.x</span>
+      <span class="tool">Playwright</span>
+      <span class="tool">MS Edge</span>
+    </div>
+    <div class="arrow">➜</div>
+    <div class="step">
+      <span class="n">2</span>
+      <h3>Navegação por teclado</h3>
+      <p>Script pressiona <b>Tab 12×</b> a partir do carregamento, registrando a ordem de foco e detectando armadilhas de teclado.</p>
+      <span class="tool">Playwright</span>
+      <span class="tool">Keyboard API</span>
+    </div>
+    <div class="arrow">➜</div>
+    <div class="step">
+      <span class="n">3</span>
+      <h3>Árvore de acessibilidade</h3>
+      <p>Extração programática da <i>accessibility tree</i> — a mesma estrutura que o leitor de tela NVDA consulta — para achar elementos sem nome acessível.</p>
+      <span class="tool">Chrome DevTools Protocol</span>
+    </div>
+    <div class="arrow">➜</div>
+    <div class="step">
+      <span class="n">4</span>
+      <h3>Consolidação</h3>
+      <p>Dados reunidos em tabelas e classificados pelos 4 princípios WCAG (Perceptível, Operável, Compreensível, Robusto).</p>
+      <span class="tool">Python</span>
+    </div>
+    <div class="arrow">➜</div>
+    <div class="step compl">
+      <span class="n">5</span>
+      <h3>Confirmação com NVDA real</h3>
+      <p>A árvore de acessibilidade (passo 3) é um <b>proxy técnico</b> do que o NVDA lê, mas não reproduz a experiência auditiva real (ordem de leitura, anúncios de "link/botão", modais). Por isso o teste com o <b>NVDA em uso real</b> fica como etapa complementar — ideal para validar ao vivo a armadilha de teclado de Araucária.</p>
+      <span class="tag">COMPLEMENTAR · RECOMENDADO</span>
+    </div>
+  </div>
+
+  <div class="results">
+    <div class="kpi">
+      <div class="num">472</div>
+      <div class="lbl">violações automatizadas detectadas (axe-core)</div>
+    </div>
+    <div class="kpi">
+      <div class="num">5/5</div>
+      <div class="lbl">municípios com falha de contraste mínimo (1.4.3)</div>
+    </div>
+    <div class="kpi">
+      <div class="num">3/5</div>
+      <div class="lbl">portais na mesma plataforma terceirizada (mesmo bug ARIA)</div>
+    </div>
+    <div class="kpi alert">
+      <div class="num">Armadilha<br>de teclado</div>
+      <div class="lbl">Araucária — critério 2.1.2 (nível A): o achado mais grave</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    Pipeline 100% reproduzível · Fontes: auditoria axe-core + navegação automatizada (Playwright/Edge) + Chrome DevTools Protocol, jun. 2026
+  </div>
+</body>
+</html>

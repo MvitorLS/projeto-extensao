@@ -1,0 +1,39 @@
+# LaTeX auxiliary files
+*.aux
+*.bbl
+*.blg
+*.brf
+*.idx
+*.ilg
+*.ind
+*.lof
+*.lot
+*.loq
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# Backup and temp files
+*~
+*.bak
+*.tmp
+
+# OS & Editors
+Thumbs.db
+Desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# Always track important documents and assets
+!*.pdf
+!*.docx
+!*.tex
+!*.bib
+!*.bat
+!*.ps1
+!*.png
+!*.jpg

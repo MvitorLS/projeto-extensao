@@ -1,0 +1,58 @@
+% =========================================================================
+% PROPOSTA DE DESENVOLVIMENTO DE ATIVIDADES DE EXTENSÃO
+% Curso de Bacharelado em Ciência da Computação - IFPR Campus Pinhais
+% =========================================================================
+
+\documentclass[12pt, openright, oneside, a4paper, english, brazilian]{abntex2}
+
+\input{pacotes.tex}
+\input{configuracoes_ifpr.tex}
+
+% Configurações específicas para a Proposta de Extensão
+\titulo{PROPOSTA DE DESENVOLVIMENTO DE ATIVIDADES DE EXTENSÃO: PROTÓTIPO DE BRACELETE INTELIGENTE COM ESP32 PARA AUXÍLIO À ORIENTAÇÃO DE PESSOAS COM BAIXA VISÃO}
+\tipotrabalho{Proposta de Atividades de Extensão}
+\preambulo{Proposta de atividades extensionistas apresentada à disciplina de Práticas de Extensão III, do curso de Bacharelado em Ciência da Computação do Instituto Federal do Paraná, Campus Pinhais, sob a orientação do professor responsável Alvaro Rogerio Cantieri.}
+
+\begin{document}
+
+\selectlanguage{brazilian}
+\frenchspacing
+
+% ---
+% ELEMENTOS PRÉ-TEXTUAIS DA PROPOSTA
+% Conforme modelo oficial IFPR: Capa, Folha de Rosto e Sumário
+% ---
+\imprimircapa
+\imprimirfolhaderosto
+
+\pdfbookmark[0]{\contentsname}{toc}
+\tableofcontents*
+\cleardoublepage
+
+% ---
+% ELEMENTOS TEXTUAIS DA PROPOSTA
+% Estrutura oficial: 1 Introdução, 2 Justificativa, 3 Objetivo, 4 Atividades e Cronograma
+% ---
+\textual
+
+\input{introducao/capitulo_introducao_proposta.tex}
+\input{justificativa/capitulo_justificativa_proposta.tex}
+\input{objetivo/capitulo_objetivo.tex}
+\input{cronograma/capitulo_cronograma_proposta.tex}
+
+% ---
+% ELEMENTOS PÓS-TEXTUAIS
+% ---
+\postextual
+\nocite{brasil2015lbi, oms2019vision, bersch2017, espressif2023esp32}
+\bibliography{referencias/referencias}
+
+% ----------------------------------------------------------
+% Apêndice: Termo de Declaração de Uso de IAG Assinado
+% ----------------------------------------------------------
+\begin{apendicesenv}
+\partapendices
+\input{apendices/apendice_a_iag.tex}
+\end{apendicesenv}
+
+\end{document}

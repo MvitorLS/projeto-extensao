@@ -1,0 +1,110 @@
+% Este documento foi adaptado por Marcos Laureano a partir do original disponibilizado
+% em https://www.overleaf.com/latex/templates/modelo-canonico-do-ifpr-com-logo/mqtrmrvzyfsb feito por Rafael Silva Santos
+
+\documentclass[12pt, openright, oneside, a4paper, english, brazilian]{abntex2}
+
+\input{pacotes.tex}
+\input{configuracoes_ifpr.tex} %% aqui você deve alterar dados como nomes dos autores e orientadores
+
+\begin{document}
+
+\input{coisas_obrigatorias.tex} %%aqui também tem coisas que precisam ser alteradas
+\input{coisas_opcionais.tex}
+
+% ---
+% RESUMOS
+% ---
+\input{resumo.tex}
+
+% ---
+% inserir lista de ilustrações OPCIONAL
+% ---
+\input{listas_simbolos.tex}
+
+
+
+% ---
+% inserir o sumario OBRIGATÓRIO
+% ---
+\pdfbookmark[0]{\contentsname}{toc}
+\tableofcontents*
+\cleardoublepage
+
+% ---
+% ----------------------------------------------------------
+% ELEMENTOS TEXTUAIS
+% ----------------------------------------------------------
+\textual
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% TEXTO AQUI
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{introducao/capitulo_introducao.tex}
+%\input{delimitacao/capitulo_delimitacao.tex}
+\input{justificativa/capitulo_justificativa.tex}
+\input{objetivo/capitulo_objetivo.tex}
+\input{metodologia/capitulo_metodologia.tex}
+%\input{resultados/capitulo_resultados_discussoes.tex}
+%\input{consideracoes_finais/capitulo_consideracoes_finais.tex}	
+
+
+% ----------------------------
+
+% ----------------------------------------------------------
+% ELEMENTOS PÓS-TEXTUAIS
+% ----------------------------------------------------------
+\postextual
+% ----------------------------------------------------------
+
+% ----------------------------------------------------------
+% Referências bibliográficas OBRIGATORIO
+% ----------------------------------------------------------
+\nocite{brasil2015lbi, oms2019vision, bersch2017, espressif2023esp32}
+\bibliography{referencias/referencias}
+
+% ----------------------------------------------------------
+% Glossário
+% ----------------------------------------------------------
+%
+% Consulte o manual da classe abntex2 para orientações sobre o glossário.
+%
+%\glossary
+
+% ----------------------------------------------------------
+% Apêndices
+% ----------------------------------------------------------
+
+% ---
+% Inicia os apêndices OPCIONAL
+% ---
+\begin{apendicesenv}
+
+% Imprime uma página indicando o início dos apêndices
+\partapendices
+
+% ----------------------------------------------------------
+\input{apendices/apendice_a_iag.tex}
+
+\end{apendicesenv}
+% ---
+
+
+% ----------------------------------------------------------
+% Anexos
+% ----------------------------------------------------------
+
+% ---
+% Inicia os anexos OPCIONAL
+% ---
+\begin{anexosenv}
+
+% Imprime uma página indicando o início dos anexos
+\partanexos
+%% crie um arquivo .tex para cada anexo.
+\input{anexos/anexos.tex}
+
+\end{anexosenv}
+
+
+
+\end{document}

@@ -1,0 +1,44 @@
+\chapter{ATIVIDADES E CRONOGRAMA}
+\label{capitulo-cronograma-proposta}
+
+A execução do projeto de extensão será organizada em cinco etapas complementares, cobrindo o levantamento de requisitos técnicos, o dimensionamento dos circuitos, o desenvolvimento do software embarcado, a realização de ensaios laboratoriais e a apresentação final dos resultados.
+
+\section{Detalhamento das Atividades Previstas}
+\label{sec:detalhamento-atividades-proposta}
+
+\begin{enumerate}
+    \item \textbf{Atividade 1 -- Pesquisa e levantamento de requisitos:} Estudo das normas de acessibilidade aplicáveis, pesquisa de tecnologias de sensores de proximidade (ultrassom e tempo de voo) e transdutores vibrotáteis adequados a dispositivos vestíveis, análise ergonômica de fixação no punho e especificação da lista de materiais;
+    \item \textbf{Atividade 2 -- Projeto e montagem do bracelete:} Concepção do diagrama elétrico de conexões, dimensionamento dos circuitos de proteção dos pinos GPIO do ESP32 (divisor resistivo de tensão de 5~V para 3,3~V e circuito de chaveamento a transistor para o motor de vibração) e montagem física dos componentes no suporte vestível;
+    \item \textbf{Atividade 3 -- Programação do ESP32 e integração dos sensores:} Implementação do firmware em C/C++ no ambiente PlatformIO/Arduino IDE, incluindo leitura periódica do sensor, algoritmo de filtragem digital por média móvel para eliminação de ruídos e modulação háptica proporcional por zonas de proximidade;
+    \item \textbf{Atividade 4 -- Testes, avaliação e apresentação do protótipo:} Execução de testes controlados em bancada laboratorial para verificar o alcance de detecção, a estabilidade das leituras frente a diferentes materiais e a resposta tátil do dispositivo;
+    \item \textbf{Atividade 5 -- Documentação e registro dos resultados:} Tabulação dos dados colhidos, análise das limitações observadas, redação do relatório final de atividades e apresentação do protótipo perante a comunidade acadêmica do IFPR Campus Pinhais.
+\end{enumerate}
+
+\section{Cronograma Físico de Execução}
+\label{sec:cronograma-fisico-proposta}
+
+O Quadro~\ref{qua:cronograma-proposta} apresenta o cronograma semanal previsto para a realização das atividades extensionistas ao longo de quatro semanas no primeiro semestre de 2026.
+
+\begin{quadro}[htb]
+\centering
+\caption{Cronograma de execução previsto para a proposta de extensão}
+\label{qua:cronograma-proposta}
+\small
+\begin{tabular}{|p{7.5cm}|c|c|c|c|}
+\hline
+\textbf{Atividade Prevista} & \textbf{Sem.~1} & \textbf{Sem.~2} & \textbf{Sem.~3} & \textbf{Sem.~4} \\
+\hline
+1. Pesquisa e levantamento de requisitos & X & & & \\
+\hline
+2. Projeto e montagem do bracelete & & X & & \\
+\hline
+3. Programação do ESP32 e integração dos sensores & & & X & \\
+\hline
+4. Testes, avaliação e apresentação do protótipo & & & & X \\
+\hline
+5. Documentação e registro dos resultados & & & & X \\
+\hline
+\end{tabular}
+\normalsize
+\fonte{Elaborado pelos autores com base na proposta de extensão (2026).}
+\end{quadro}
