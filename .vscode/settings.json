@@ -1,0 +1,55 @@
+{
+    "latex-workshop.latex.tools": [
+        {
+            "name": "pdflatex (docker)",
+            "command": "docker",
+            "args": [
+                "run",
+                "--rm",
+                "-i",
+                "-v",
+                "%DIR%:/workdir",
+                "-w",
+                "/workdir",
+                "texlive/texlive",
+                "pdflatex",
+                "-synctex=1",
+                "-interaction=nonstopmode",
+                "-file-line-error",
+                "%DOCFILE_EXT%"
+            ],
+            "env": {}
+        },
+        {
+            "name": "bibtex (docker)",
+            "command": "docker",
+            "args": [
+                "run",
+                "--rm",
+                "-i",
+                "-v",
+                "%DIR%:/workdir",
+                "-w",
+                "/workdir",
+                "texlive/texlive",
+                "bibtex",
+                "%DOCFILE%"
+            ],
+            "env": {}
+        }
+    ],
+    "latex-workshop.latex.recipes": [
+        {
+            "name": "Docker: pdflatex -> bibtex -> pdflatex",
+            "tools": [
+                "pdflatex (docker)",
+                "bibtex (docker)",
+                "pdflatex (docker)",
+                "pdflatex (docker)"
+            ]
+        }
+    ],
+    "latex-workshop.latex.recipe.default": "first",
+    "latex-workshop.latex.autoBuild.run": "never",
+    "latex-workshop.view.pdf.viewer": "tab"
+}
