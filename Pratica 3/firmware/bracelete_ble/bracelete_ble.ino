@@ -26,7 +26,8 @@
 
 // Modo demonstração: simula um obstáculo indo e voltando (200 -> 20 cm).
 // Liga/desliga apertando o botão BOOT com a placa rodando.
-bool demoMode = false;
+volatile bool demoMode = false;
+volatile unsigned long lastPress = 0;
 
 #define DEVICE_NAME "Bracelete-ESP32"
 #define SERVICE_UUID "309229c8-9c1c-477a-a03f-3384523c5ebc"
@@ -38,7 +39,6 @@ const unsigned long NOTIFY_MS = 500;
 
 BLECharacteristic *distChar;
 bool connected = false;
-bool lastBoot = HIGH;
 int lastLevel = -1;
 unsigned long lastNotify = 0;
 
@@ -57,13 +57,13 @@ int demoDistanceCm() {
   return 20 + labs(t - (long)PERIOD / 2) * 180 / (PERIOD / 2);
 }
 
-void checkBootButton() {
-  bool now = digitalRead(BOOT_PIN);
-  if (lastBoot == HIGH && now == LOW) {
+// Interrupção: o loop fica ~130 ms bloqueado e perderia toques rápidos
+void IRAM_ATTR onBootPress() {
+  unsigned long now = millis();
+  if (now - lastPress > 300) {
     demoMode = !demoMode;
-    Serial.printf("Modo demonstracao: %s\n", demoMode ? "LIGADO" : "DESLIGADO");
+    lastPress = now;
   }
-  lastBoot = now;
 }
 
 int readDistanceCm() {
@@ -112,13 +112,13 @@ void setup() {
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
   pinMode(BOOT_PIN, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(BOOT_PIN), onBootPress, FALLING);
   ledcAttach(MOTOR_PIN, PWM_FREQ, PWM_RES);
   setupBle();
   Serial.println("Bracelete pronto, anunciando via BLE como " DEVICE_NAME);
 }
 
 void loop() {
-  checkBootButton();
   int cm = demoMode ? demoDistanceCm() : readDistanceCm();
   int level = levelFor(cm);
   ledcWrite(MOTOR_PIN, DUTY[level]);
