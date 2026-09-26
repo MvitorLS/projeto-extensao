@@ -6,5 +6,5 @@
   - Service `309229c8-9c1c-477a-a03f-3384523c5ebc`, char `09104702-68f7-4e84-b2d0-de4fe213ea52`, payload texto `"<cm>,<nivel>"` (nível 0 livre .. 3 muito perto; cm=-1 sem leitura).
   - Notifica a cada 500 ms ou na troca de nível.
   - Firmware: `Pratica 3/firmware/bracelete_ble/`, gravar com `firmware/gravar.sh` (arduino-cli em ~/.local/bin). Placa real = **ESP32-C3** (USB nativo /dev/ttyACM0, 4MB, MAC 70:af:09:01:5c:3c), FQBN `esp32:esp32:esp32c3:CDCOnBoot=cdc` (sem CDCOnBoot o Serial não sai pela USB). Pinos C3: TRIG 3, ECHO 4, MOTOR 5 (18/19 = USB; 2/8/9 = strapping). Gravado e rodando em 2026-09-26.
-  - Receptor: `Pratica 3/app-web/index.html` (Web Bluetooth: Chrome Android, exige HTTPS/localhost → GitHub Pages; fala via speechSynthesis + vibra). iOS não suporta (usar app Bluefy).
+  - Receptor: `Pratica 3/app-web/index.html` (Web Bluetooth: Chrome Android, publicado em https://mvitorls.github.io/projeto-extensao/Pratica%203/app-web/ (Pages da main, raiz; `.nojekyll` obrigatório — Jekyll quebra com os .md do repo); fala via speechSynthesis + vibra). iOS não suporta (usar app Bluefy).
 - Sensor ainda indefinido: esquema técnico sem ultrassom, mas firmware/anexos usam HC-SR04 (pinos do ESP32 clássico nos anexos: 5/18/19 — desatualizados para o C3). Trocar só `readDistanceCm()`.
