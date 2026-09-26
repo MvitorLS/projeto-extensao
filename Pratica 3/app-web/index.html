@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bracelete ESP32</title>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #000; color: #fff;
+         display: flex; flex-direction: column; align-items: center; justify-content: center;
+         min-height: 100vh; gap: 1.5rem; padding: 1rem; box-sizing: border-box; text-align: center; }
+  button { font-size: 1.6rem; padding: 1rem 2rem; border: 3px solid #ff0; background: #000;
+           color: #ff0; border-radius: 12px; }
+  #dist { font-size: 5rem; font-weight: 700; }
+  #nivel { font-size: 2rem; padding: .5rem 1rem; border-radius: 8px; }
+  .n0 { background: #063; } .n1 { background: #960; } .n2 { background: #c60; } .n3 { background: #c00; }
+</style>
+</head>
+<body>
+  <button id="conectar">Conectar ao bracelete</button>
+  <div id="dist" aria-hidden="true">-- cm</div>
+  <div id="nivel" class="n0" role="status" aria-live="assertive">Desconectado</div>
+
+<script>
+const SERVICE = '309229c8-9c1c-477a-a03f-3384523c5ebc';
+const DIST = '09104702-68f7-4e84-b2d0-de4fe213ea52';
+const NOMES = ['Caminho livre', 'Obstáculo distante', 'Obstáculo próximo', 'Obstáculo muito perto'];
+const VIBRA = [0, 100, 250, 500];
+
+const $dist = document.getElementById('dist');
+const $nivel = document.getElementById('nivel');
+let ultimoNivel = -1;
+
+function falar(texto) {
+  speechSynthesis.cancel();
+  speechSynthesis.speak(Object.assign(new SpeechSynthesisUtterance(texto), { lang: 'pt-BR' }));
+}
+
+function onLeitura(event) {
+  const [cm, nivel] = new TextDecoder().decode(event.target.value).split(',').map(Number);
+  $dist.textContent = cm > 0 ? `${cm} cm` : '-- cm';
+  $nivel.className = `n${nivel}`;
+  $nivel.textContent = NOMES[nivel];
+  if (nivel !== ultimoNivel) {
+    falar(nivel > 0 ? `${NOMES[nivel]}, ${cm} centímetros` : NOMES[0]);
+    if (VIBRA[nivel]) navigator.vibrate?.(VIBRA[nivel]);
+    ultimoNivel = nivel;
+  }
+}
+
+document.getElementById('conectar').addEventListener('click', async () => {
+  if (!navigator.bluetooth) {
+    $nivel.textContent = 'Navegador sem Web Bluetooth. Use o Chrome no Android.';
+    return;
+  }
+  try {
+    const device = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE] }] });
+    device.addEventListener('gattserverdisconnected', () => {
+      $nivel.textContent = 'Desconectado';
+      falar('Bracelete desconectado');
+      ultimoNivel = -1;
+    });
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(SERVICE);
+    const ch = await service.getCharacteristic(DIST);
+    ch.addEventListener('characteristicvaluechanged', onLeitura);
+    await ch.startNotifications();
+    $nivel.textContent = 'Conectado';
+    falar('Bracelete conectado');
+  } catch (e) {
+    $nivel.textContent = `Erro: ${e.message}`;
+  }
+});
+</script>
+</body>
+</html>
