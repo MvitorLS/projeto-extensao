@@ -16,11 +16,17 @@
 #define TRIG_PIN 3
 #define ECHO_PIN 4
 #define MOTOR_PIN 5
+#define BOOT_PIN 9
 #else
 #define TRIG_PIN 5
 #define ECHO_PIN 18
 #define MOTOR_PIN 19
+#define BOOT_PIN 0
 #endif
+
+// Modo demonstração: simula um obstáculo indo e voltando (200 -> 20 cm).
+// Liga/desliga apertando o botão BOOT com a placa rodando.
+bool demoMode = false;
 
 #define DEVICE_NAME "Bracelete-ESP32"
 #define SERVICE_UUID "309229c8-9c1c-477a-a03f-3384523c5ebc"
@@ -32,6 +38,7 @@ const unsigned long NOTIFY_MS = 500;
 
 BLECharacteristic *distChar;
 bool connected = false;
+bool lastBoot = HIGH;
 int lastLevel = -1;
 unsigned long lastNotify = 0;
 
@@ -44,6 +51,21 @@ class ServerCallbacks : public BLEServerCallbacks {
 };
 
 // Troque esta função se o sensor mudar (ex.: VL53L0X); o resto não muda.
+int demoDistanceCm() {
+  const unsigned long PERIOD = 16000;
+  long t = millis() % PERIOD;
+  return 20 + labs(t - (long)PERIOD / 2) * 180 / (PERIOD / 2);
+}
+
+void checkBootButton() {
+  bool now = digitalRead(BOOT_PIN);
+  if (lastBoot == HIGH && now == LOW) {
+    demoMode = !demoMode;
+    Serial.printf("Modo demonstracao: %s\n", demoMode ? "LIGADO" : "DESLIGADO");
+  }
+  lastBoot = now;
+}
+
 int readDistanceCm() {
   digitalWrite(TRIG_PIN, LOW);
   delayMicroseconds(2);
@@ -89,26 +111,28 @@ void setup() {
   Serial.begin(115200);
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
+  pinMode(BOOT_PIN, INPUT_PULLUP);
   ledcAttach(MOTOR_PIN, PWM_FREQ, PWM_RES);
   setupBle();
   Serial.println("Bracelete pronto, anunciando via BLE como " DEVICE_NAME);
 }
 
 void loop() {
-  int cm = readDistanceCm();
+  checkBootButton();
+  int cm = demoMode ? demoDistanceCm() : readDistanceCm();
   int level = levelFor(cm);
   ledcWrite(MOTOR_PIN, DUTY[level]);
 
   // Envia a cada NOTIFY_MS ou imediatamente quando o nível de alerta muda
   unsigned long now = millis();
   if (connected && (level != lastLevel || now - lastNotify >= NOTIFY_MS)) {
-    String payload = String(cm) + "," + String(level);
+    String payload = String(cm) + "," + String(level) + "," + String(demoMode);
     distChar->setValue(payload.c_str());
     distChar->notify();
     lastNotify = now;
     lastLevel = level;
   }
 
-  Serial.printf("dist=%d cm nivel=%d\n", cm, level);
+  Serial.printf("dist=%d cm nivel=%d%s\n", cm, level, demoMode ? " [demo]" : "");
   delay(100);
 }

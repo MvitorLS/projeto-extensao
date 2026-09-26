@@ -42,8 +42,8 @@ function falar(texto) {
 }
 
 function onLeitura(event) {
-  const [cm, nivel] = new TextDecoder().decode(event.target.value).split(',').map(Number);
-  $status.textContent = `Recebendo dados: ${++leituras} leituras`;
+  const [cm, nivel, demo] = new TextDecoder().decode(event.target.value).split(',').map(Number);
+  $status.textContent = `${demo ? 'MODO DEMONSTRAÇÃO — ' : ''}Recebendo dados: ${++leituras} leituras`;
   // cm <= 0 = sensor sem eco/desligado; nunca anunciar como caminho livre
   const estado = cm > 0 ? nivel : 'sem';
   $dist.textContent = cm > 0 ? `${cm} cm` : '-- cm';
