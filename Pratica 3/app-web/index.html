@@ -13,12 +13,15 @@
   #dist { font-size: 5rem; font-weight: 700; }
   #nivel { font-size: 2rem; padding: .5rem 1rem; border-radius: 8px; }
   .n0 { background: #063; } .n1 { background: #960; } .n2 { background: #c60; } .n3 { background: #c00; }
+  .sem { background: #555; }
+  #status { font-size: 1.1rem; color: #bbb; }
 </style>
 </head>
 <body>
   <button id="conectar">Conectar ao bracelete</button>
   <div id="dist" aria-hidden="true">-- cm</div>
   <div id="nivel" class="n0" role="status" aria-live="assertive">Desconectado</div>
+  <div id="status">Aguardando conexão</div>
 
 <script>
 const SERVICE = '309229c8-9c1c-477a-a03f-3384523c5ebc';
@@ -28,7 +31,10 @@ const VIBRA = [0, 100, 250, 500];
 
 const $dist = document.getElementById('dist');
 const $nivel = document.getElementById('nivel');
+const $status = document.getElementById('status');
+const SEM_SENSOR = 'Sensor sem leitura';
 let ultimoNivel = -1;
+let leituras = 0;
 
 function falar(texto) {
   speechSynthesis.cancel();
@@ -37,13 +43,17 @@ function falar(texto) {
 
 function onLeitura(event) {
   const [cm, nivel] = new TextDecoder().decode(event.target.value).split(',').map(Number);
+  $status.textContent = `Recebendo dados: ${++leituras} leituras`;
+  // cm <= 0 = sensor sem eco/desligado; nunca anunciar como caminho livre
+  const estado = cm > 0 ? nivel : 'sem';
   $dist.textContent = cm > 0 ? `${cm} cm` : '-- cm';
-  $nivel.className = `n${nivel}`;
-  $nivel.textContent = NOMES[nivel];
-  if (nivel !== ultimoNivel) {
-    falar(nivel > 0 ? `${NOMES[nivel]}, ${cm} centímetros` : NOMES[0]);
+  $nivel.className = cm > 0 ? `n${nivel}` : 'sem';
+  $nivel.textContent = cm > 0 ? NOMES[nivel] : SEM_SENSOR;
+  if (estado !== ultimoNivel) {
+    if (cm <= 0) falar(SEM_SENSOR);
+    else falar(nivel > 0 ? `${NOMES[nivel]}, ${cm} centímetros` : NOMES[0]);
     if (VIBRA[nivel]) navigator.vibrate?.(VIBRA[nivel]);
-    ultimoNivel = nivel;
+    ultimoNivel = estado;
   }
 }
 
@@ -57,7 +67,9 @@ document.getElementById('conectar').addEventListener('click', async () => {
     device.addEventListener('gattserverdisconnected', () => {
       $nivel.textContent = 'Desconectado';
       falar('Bracelete desconectado');
+      $status.textContent = 'Sem dados';
       ultimoNivel = -1;
+      leituras = 0;
     });
     const server = await device.gatt.connect();
     const service = await server.getPrimaryService(SERVICE);
