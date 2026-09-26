@@ -19,20 +19,20 @@
 </head>
 <body>
   <button id="conectar">Conectar ao bracelete</button>
-  <div id="dist" aria-hidden="true">-- cm</div>
+  <div id="dist" aria-hidden="true">-- m</div>
   <div id="nivel" class="n0" role="status" aria-live="assertive">Desconectado</div>
   <div id="status">Aguardando conexão</div>
 
 <script>
 const SERVICE = '309229c8-9c1c-477a-a03f-3384523c5ebc';
 const DIST = '09104702-68f7-4e84-b2d0-de4fe213ea52';
-const NOMES = ['Caminho livre', 'Obstáculo distante', 'Obstáculo próximo', 'Obstáculo muito perto'];
+const FAIXAS = ['ao longe', 'à frente', 'próxima', 'muito perto'];
 const VIBRA = [0, 100, 250, 500];
 
 const $dist = document.getElementById('dist');
 const $nivel = document.getElementById('nivel');
 const $status = document.getElementById('status');
-const SEM_SENSOR = 'Sensor sem leitura';
+const SEM_BALIZA = 'Nenhuma baliza por perto';
 let ultimoNivel = -1;
 let leituras = 0;
 
@@ -41,18 +41,25 @@ function falar(texto) {
   speechSynthesis.speak(Object.assign(new SpeechSynthesisUtterance(texto), { lang: 'pt-BR' }));
 }
 
+// Distância por RSSI é aproximada: arredonda para meio metro
+function metros(cm) {
+  const m = Math.max(0.5, Math.round(cm / 50) / 2);
+  return m.toLocaleString('pt-BR');
+}
+
+// Payload: "<baliza>,<cm>,<nivel>,<demo>"; baliza vazia = nenhuma por perto
 function onLeitura(event) {
-  const [cm, nivel, demo] = new TextDecoder().decode(event.target.value).split(',').map(Number);
+  const [baliza, ...resto] = new TextDecoder().decode(event.target.value).split(',');
+  const [cm, nivel, demo] = resto.map(Number);
   $status.textContent = `${demo ? 'MODO DEMONSTRAÇÃO — ' : ''}Recebendo dados: ${++leituras} leituras`;
-  // cm <= 0 = sensor sem eco/desligado; nunca anunciar como caminho livre
-  const estado = cm > 0 ? nivel : 'sem';
-  $dist.textContent = cm > 0 ? `${cm} cm` : '-- cm';
-  $nivel.className = cm > 0 ? `n${nivel}` : 'sem';
-  $nivel.textContent = cm > 0 ? NOMES[nivel] : SEM_SENSOR;
+  const achou = baliza && cm > 0;
+  const estado = achou ? `${baliza}|${nivel}` : 'nenhuma';
+  $dist.textContent = achou ? `~${metros(cm)} m` : '-- m';
+  $nivel.className = achou ? `n${nivel}` : 'sem';
+  $nivel.textContent = achou ? `${baliza} ${FAIXAS[nivel]}` : SEM_BALIZA;
   if (estado !== ultimoNivel) {
-    if (cm <= 0) falar(SEM_SENSOR);
-    else falar(nivel > 0 ? `${NOMES[nivel]}, ${cm} centímetros` : NOMES[0]);
-    if (VIBRA[nivel]) navigator.vibrate?.(VIBRA[nivel]);
+    falar(achou ? `${baliza} ${FAIXAS[nivel]}, cerca de ${metros(cm)} metros` : SEM_BALIZA);
+    if (achou && VIBRA[nivel]) navigator.vibrate?.(VIBRA[nivel]);
     ultimoNivel = estado;
   }
 }
