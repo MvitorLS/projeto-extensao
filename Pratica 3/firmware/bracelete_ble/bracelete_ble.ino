@@ -5,15 +5,22 @@
 // ao celular via BLE (notify). Fluxo unidirecional ESP32 -> celular: a
 // característica não aceita escrita, então o celular não comanda o bracelete.
 //
-// Placa: ESP32 Dev Module | Core: esp32 by Espressif 3.x
+// Placa: ESP32-C3 (padrão) ou ESP32 Dev Module | Core: esp32 by Espressif 3.x
 
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLE2902.h>
 
+// No ESP32-C3 os GPIO 18/19 são o USB nativo e 2/8/9 são de boot
+#if CONFIG_IDF_TARGET_ESP32C3
+#define TRIG_PIN 3
+#define ECHO_PIN 4
+#define MOTOR_PIN 5
+#else
 #define TRIG_PIN 5
 #define ECHO_PIN 18
 #define MOTOR_PIN 19
+#endif
 
 #define DEVICE_NAME "Bracelete-ESP32"
 #define SERVICE_UUID "309229c8-9c1c-477a-a03f-3384523c5ebc"
