@@ -2,10 +2,10 @@
 // Matheus Schionato e Vairtles Liel
 //
 // Sem sensor de distância: o bracelete escuta balizas BLE (aparelhos cujo nome
-// começa com "BALIZA-", ex.: "BALIZA-Escada") presas em pontos de interesse,
-// estima a distância pela intensidade do sinal (RSSI), vibra e ENVIA a baliza
-// mais próxima ao celular via BLE (notify). Fluxo unidirecional ESP32 -> celular:
-// a característica não aceita escrita, então o celular não comanda o bracelete.
+// começa com "BALIZA-", ex.: "BALIZA-Porta") espalhadas pela sala, estima a
+// distância de cada uma pela intensidade do sinal (RSSI), vibra conforme a mais
+// próxima e ENVIA todas ao celular via BLE (notify) para orientação.
+// Fluxo unidirecional ESP32 -> celular: a característica não aceita escrita.
 //
 // Placa: ESP32-C3 (padrão) ou ESP32 Dev Module | Core: esp32 by Espressif 3.x
 
@@ -31,13 +31,14 @@
 const int PWM_FREQ = 5000;
 const int PWM_RES = 8;
 const unsigned long NOTIFY_MS = 500;
-const unsigned long BEACON_TIMEOUT_MS = 3000;
+// Anúncios se perdem enquanto o rádio atende o celular: tolera alguns segundos
+const unsigned long BEACON_TIMEOUT_MS = 6000;
 
 // Modelo log-distância: RSSI medido a 1 m e expoente do ambiente (2 = aberto,
 // 3 = interno com obstáculos). Calibrar com a baliza real a 1 m.
 const float RSSI_1M = -59.0;
 const float PATH_LOSS_N = 2.5;
-const float RSSI_ALPHA = 0.3;  // suavização da média móvel exponencial
+const float RSSI_ALPHA = 0.15;  // suavização da média móvel exponencial
 
 struct Beacon {
   char name[16];
@@ -45,19 +46,25 @@ struct Beacon {
   unsigned long lastSeen;
 };
 
+struct Point {
+  char name[16];
+  int cm;
+};
+
 const int MAX_BEACONS = 8;
 Beacon beacons[MAX_BEACONS];
 portMUX_TYPE beaconsMux = portMUX_INITIALIZER_UNLOCKED;
 
-// Modo demonstração: simula a "BALIZA-Escada" indo e voltando (6 m -> 0,3 m).
+// Modo demonstração: simula três balizas se movendo pela sala.
 // Liga/desliga apertando o botão BOOT com a placa rodando.
 volatile bool demoMode = false;
 volatile unsigned long lastPress = 0;
 
+BLEServer *server;
 BLECharacteristic *distChar;
 bool connected = false;
-String lastKey = "";
 unsigned long lastNotify = 0;
+int motorLevel = 0;
 
 class ServerCallbacks : public BLEServerCallbacks {
   void onConnect(BLEServer *) override { connected = true; }
@@ -73,6 +80,10 @@ class ScanCallbacks : public BLEAdvertisedDeviceCallbacks {
     String full = dev.getName();
     if (!full.startsWith(BEACON_PREFIX)) return;
     String name = full.substring(strlen(BEACON_PREFIX));
+    name.replace(",", " ");
+    name.replace(";", " ");
+    name.replace(":", " ");
+    name.replace("|", " ");
     int rssi = dev.getRSSI();
     unsigned long now = millis();
 
@@ -107,49 +118,58 @@ int rssiToCm(float rssi) {
   return 100 * pow(10, (RSSI_1M - rssi) / (10 * PATH_LOSS_N));
 }
 
-// Baliza visível mais próxima; false se nenhuma foi vista nos últimos segundos
-bool nearestBeacon(String &name, int &cm) {
-  if (demoMode) {
-    const unsigned long PERIOD = 16000;
-    long t = millis() % PERIOD;
-    name = "Escada";
-    cm = 30 + labs(t - (long)PERIOD / 2) * 570 / (PERIOD / 2);
-    return true;
-  }
-  unsigned long now = millis();
-  int best = -1;
-  char bestName[16];
-  float bestRssi = 0;
-  portENTER_CRITICAL(&beaconsMux);
-  for (int i = 0; i < MAX_BEACONS; i++) {
-    if (!beacons[i].lastSeen || now - beacons[i].lastSeen > BEACON_TIMEOUT_MS) continue;
-    if (best < 0 || beacons[i].rssi > beacons[best].rssi) best = i;
-  }
-  if (best >= 0) {
-    strlcpy(bestName, beacons[best].name, sizeof(bestName));
-    bestRssi = beacons[best].rssi;
-  }
-  portEXIT_CRITICAL(&beaconsMux);
-  if (best < 0) return false;
-  name = bestName;
-  cm = rssiToCm(bestRssi);
-  return true;
+int demoCm(unsigned long period, int minCm, int maxCm, unsigned long offset) {
+  long t = (millis() + offset) % period;
+  return minCm + labs(t - (long)period / 2) * (maxCm - minCm) / (period / 2);
 }
 
-// 3 = até 1 m, 2 = até 2 m, 1 = até 4 m, 0 = longe
-int levelFor(int cm) {
-  if (cm <= 0) return 0;
-  if (cm <= 100) return 3;
-  if (cm <= 200) return 2;
-  if (cm <= 400) return 1;
-  return 0;
+// Balizas vistas nos últimos segundos, da mais próxima para a mais distante
+int visiblePoints(Point *out) {
+  int n = 0;
+  if (demoMode) {
+    const char *names[] = {"Porta", "Mesa", "Janela"};
+    int cms[] = {demoCm(20000, 50, 600, 0), demoCm(14000, 80, 400, 5000), demoCm(26000, 150, 700, 9000)};
+    for (int i = 0; i < 3; i++) {
+      strlcpy(out[n].name, names[i], sizeof(out[n].name));
+      out[n++].cm = cms[i];
+    }
+  } else {
+    unsigned long now = millis();
+    float rssi[MAX_BEACONS];
+    portENTER_CRITICAL(&beaconsMux);
+    for (int i = 0; i < MAX_BEACONS; i++) {
+      if (!beacons[i].lastSeen || now - beacons[i].lastSeen > BEACON_TIMEOUT_MS) continue;
+      strlcpy(out[n].name, beacons[i].name, sizeof(out[n].name));
+      rssi[n++] = beacons[i].rssi;
+    }
+    portEXIT_CRITICAL(&beaconsMux);
+    for (int i = 0; i < n; i++) out[i].cm = rssiToCm(rssi[i]);
+  }
+  for (int i = 1; i < n; i++)
+    for (int j = i; j > 0 && out[j].cm < out[j - 1].cm; j--) {
+      Point tmp = out[j]; out[j] = out[j - 1]; out[j - 1] = tmp;
+    }
+  return n;
+}
+
+// 3 = até 1 m, 2 = até 2 m, 1 = até 4 m, 0 = longe.
+// Histerese: para afastar de nível precisa passar 25% do limite, senão o
+// ruído do RSSI faz a vibração ficar alternando na fronteira.
+const int LIMITS[] = {400, 200, 100};
+
+int levelWithHysteresis(int cm, int current) {
+  int level = 0;
+  for (int i = 0; i < 3; i++) if (cm <= LIMITS[i]) level = i + 1;
+  if (level < current && cm <= LIMITS[current - 1] * 1.25) return current;
+  return level;
 }
 
 const int DUTY[] = {0, 80, 150, 255};
 
 void setupBle() {
   BLEDevice::init(DEVICE_NAME);
-  BLEServer *server = BLEDevice::createServer();
+  BLEDevice::setMTU(247);  // cabe a lista de balizas numa notificação
+  server = BLEDevice::createServer();
   server->setCallbacks(new ServerCallbacks());
 
   BLEService *service = server->createService(SERVICE_UUID);
@@ -157,7 +177,7 @@ void setupBle() {
       DIST_CHAR_UUID,
       BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
   distChar->addDescriptor(new BLE2902());
-  distChar->setValue(",-1,0,0");
+  distChar->setValue("0|");
   service->start();
 
   BLEAdvertising *adv = BLEDevice::getAdvertising();
@@ -184,24 +204,30 @@ void setup() {
 }
 
 void loop() {
-  String name = "";
-  int cm = -1;
-  bool found = nearestBeacon(name, cm);
-  int level = found ? levelFor(cm) : 0;
-  ledcWrite(MOTOR_PIN, DUTY[level]);
+  Point points[MAX_BEACONS];
+  int n = visiblePoints(points);
+  motorLevel = n ? levelWithHysteresis(points[0].cm, motorLevel) : 0;
+  ledcWrite(MOTOR_PIN, DUTY[motorLevel]);
 
-  // Envia a cada NOTIFY_MS ou imediatamente quando baliza/nível mudam
-  String key = name + level;
+  // Payload: "<demo>|Nome:cm;Nome:cm;..." (mais próxima primeiro), limitado ao MTU
+  String payload = String(demoMode ? 1 : 0) + "|";
   unsigned long now = millis();
-  if (connected && (key != lastKey || now - lastNotify >= NOTIFY_MS)) {
-    String payload = name + "," + String(cm) + "," + String(level) + "," + String(demoMode);
+  if (connected && now - lastNotify >= NOTIFY_MS) {
+    size_t maxLen = server->getPeerMTU(server->getConnId()) - 3;
+    for (int i = 0; i < n; i++) {
+      String item = String(i ? ";" : "") + points[i].name + ":" + points[i].cm;
+      if (payload.length() + item.length() > maxLen) break;
+      payload += item;
+    }
     distChar->setValue(payload.c_str());
     distChar->notify();
     lastNotify = now;
-    lastKey = key;
   }
 
-  if (found) Serial.printf("baliza=%s dist~%d cm nivel=%d%s\n", name.c_str(), cm, level, demoMode ? " [demo]" : "");
-  else Serial.println("nenhuma baliza");
+  if (n == 0) Serial.println("nenhuma baliza");
+  else {
+    for (int i = 0; i < n; i++) Serial.printf("%s~%dcm ", points[i].name, points[i].cm);
+    Serial.printf("| motor=%d%s\n", motorLevel, demoMode ? " [demo]" : "");
+  }
   delay(200);
 }

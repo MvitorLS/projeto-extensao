@@ -6,87 +6,146 @@
 <title>Bracelete ESP32</title>
 <style>
   body { margin: 0; font-family: system-ui, sans-serif; background: #000; color: #fff;
-         display: flex; flex-direction: column; align-items: center; justify-content: center;
-         min-height: 100vh; gap: 1.5rem; padding: 1rem; box-sizing: border-box; text-align: center; }
-  button { font-size: 1.6rem; padding: 1rem 2rem; border: 3px solid #ff0; background: #000;
-           color: #ff0; border-radius: 12px; }
-  #dist { font-size: 5rem; font-weight: 700; }
-  #nivel { font-size: 2rem; padding: .5rem 1rem; border-radius: 8px; }
-  .n0 { background: #063; } .n1 { background: #960; } .n2 { background: #c60; } .n3 { background: #c00; }
-  .sem { background: #555; }
+         display: flex; flex-direction: column; align-items: center; gap: 1rem;
+         min-height: 100vh; padding: 1.5rem 1rem; box-sizing: border-box; text-align: center; }
+  button { font-size: 1.5rem; padding: 1rem 1.5rem; border: 3px solid #ff0; background: #000;
+           color: #ff0; border-radius: 12px; width: 100%; max-width: 26rem; }
+  #resumo { font-size: 1.8rem; font-weight: 700; min-height: 2.4em; }
   #status { font-size: 1.1rem; color: #bbb; }
+  ul { list-style: none; padding: 0; margin: 0; width: 100%; max-width: 26rem; display: grid; gap: .6rem; }
+  li { display: flex; justify-content: space-between; font-size: 1.6rem; padding: .8rem 1rem; border-radius: 10px; }
+  .n0 { background: #333; } .n1 { background: #960; } .n2 { background: #c60; } .n3 { background: #c00; }
 </style>
 </head>
 <body>
   <button id="conectar">Conectar ao bracelete</button>
-  <div id="dist" aria-hidden="true">-- m</div>
-  <div id="nivel" class="n0" role="status" aria-live="assertive">Desconectado</div>
+  <button id="falarTudo">O que tem por perto?</button>
+  <div id="resumo">Desconectado</div>
+  <ul id="lista" aria-hidden="true"></ul>
   <div id="status">Aguardando conexão</div>
+  <div id="anuncio" role="status" aria-live="polite" style="position:absolute;left:-9999px"></div>
 
 <script>
 const SERVICE = '309229c8-9c1c-477a-a03f-3384523c5ebc';
 const DIST = '09104702-68f7-4e84-b2d0-de4fe213ea52';
-const FAIXAS = ['ao longe', 'à frente', 'próxima', 'muito perto'];
+const FAIXAS = ['longe', 'à frente', 'próxima', 'muito perto'];
 const VIBRA = [0, 100, 250, 500];
+// Mesmos limites e histerese do firmware: 25% de margem para "afastar" de nível
+const LIMITES = [400, 200, 100];
+const CONFIRMAR = 2;         // leituras seguidas antes de anunciar um ponto novo
+const INTERVALO_FALA = 4000; // ms mínimos entre anúncios do mesmo ponto
 
-const $dist = document.getElementById('dist');
-const $nivel = document.getElementById('nivel');
-const $status = document.getElementById('status');
-const SEM_BALIZA = 'Nenhuma baliza por perto';
-let ultimoNivel = -1;
+const $ = id => document.getElementById(id);
+let pontos = new Map();
 let leituras = 0;
 
-function falar(texto) {
-  speechSynthesis.cancel();
-  speechSynthesis.speak(Object.assign(new SpeechSynthesisUtterance(texto), { lang: 'pt-BR' }));
-}
-
-// Distância por RSSI é aproximada: arredonda para meio metro
 function metros(cm) {
-  const m = Math.max(0.5, Math.round(cm / 50) / 2);
-  return m.toLocaleString('pt-BR');
+  return Math.max(0.5, Math.round(cm / 50) / 2).toLocaleString('pt-BR');
 }
 
-// Payload: "<baliza>,<cm>,<nivel>,<demo>"; baliza vazia = nenhuma por perto
+function nivelCom(cm, atual) {
+  let n = 0;
+  LIMITES.forEach((lim, i) => { if (cm <= lim) n = i + 1; });
+  if (n < atual && cm <= LIMITES[atual - 1] * 1.25) return atual;
+  return n;
+}
+
+// Fila de fala: não corta a frase anterior, só descarta se acumular demais
+function falar(texto, urgente = false) {
+  $('anuncio').textContent = texto;
+  if (urgente) speechSynthesis.cancel();
+  else if (speechSynthesis.pending) return;
+  speechSynthesis.speak(Object.assign(new SpeechSynthesisUtterance(texto), { lang: 'pt-BR', rate: 1.1 }));
+}
+
+function anunciar(p, texto, urgente = false) {
+  const agora = Date.now();
+  if (!urgente && agora - p.falouEm < INTERVALO_FALA) return;
+  p.falouEm = agora;
+  falar(texto, urgente);
+}
+
+const ordenados = () => [...pontos.values()].filter(p => p.confirmado).sort((a, b) => a.cm - b.cm);
+
+function falarTudo() {
+  const lista = ordenados();
+  if (!lista.length) return falar('Nenhum ponto por perto', true);
+  const partes = lista.map(p => `${p.nome} a ${metros(p.cm)} metros`);
+  falar(`${lista.length} ${lista.length > 1 ? 'pontos' : 'ponto'}. ${partes.join('. ')}`, true);
+}
+
+function render(demo) {
+  const lista = ordenados();
+  $('lista').innerHTML = lista.map(p =>
+    `<li class="n${p.nivel}"><span>${p.nome}</span><span>~${metros(p.cm)} m</span></li>`).join('');
+  $('resumo').textContent = lista.length
+    ? `Mais perto: ${lista[0].nome} (~${metros(lista[0].cm)} m)`
+    : 'Nenhum ponto por perto';
+  $('status').textContent = `${demo ? 'MODO DEMONSTRAÇÃO — ' : ''}Recebendo dados: ${leituras} leituras`;
+}
+
+// Payload: "<demo>|Nome:cm;Nome:cm;..." (mais próxima primeiro)
 function onLeitura(event) {
-  const [baliza, ...resto] = new TextDecoder().decode(event.target.value).split(',');
-  const [cm, nivel, demo] = resto.map(Number);
-  $status.textContent = `${demo ? 'MODO DEMONSTRAÇÃO — ' : ''}Recebendo dados: ${++leituras} leituras`;
-  const achou = baliza && cm > 0;
-  const estado = achou ? `${baliza}|${nivel}` : 'nenhuma';
-  $dist.textContent = achou ? `~${metros(cm)} m` : '-- m';
-  $nivel.className = achou ? `n${nivel}` : 'sem';
-  $nivel.textContent = achou ? `${baliza} ${FAIXAS[nivel]}` : SEM_BALIZA;
-  if (estado !== ultimoNivel) {
-    falar(achou ? `${baliza} ${FAIXAS[nivel]}, cerca de ${metros(cm)} metros` : SEM_BALIZA);
-    if (achou && VIBRA[nivel]) navigator.vibrate?.(VIBRA[nivel]);
-    ultimoNivel = estado;
+  leituras++;
+  const [demo, lista = ''] = new TextDecoder().decode(event.target.value).split('|');
+  const vistos = new Set();
+
+  for (const item of lista.split(';').filter(Boolean)) {
+    const [nome, cmTxt] = item.split(':');
+    const cm = Number(cmTxt);
+    if (!nome || !(cm > 0)) continue;
+    vistos.add(nome);
+    let p = pontos.get(nome);
+    if (!p) pontos.set(nome, p = { nome, cm, nivel: 0, vezes: 0, confirmado: false, falouEm: 0 });
+    p.cm = cm;
+    p.vezes++;
+    const antes = p.nivel;
+    p.nivel = nivelCom(cm, p.nivel);
+
+    if (!p.confirmado && p.vezes >= CONFIRMAR) {
+      p.confirmado = true;
+      anunciar(p, `${p.nome} detectada, cerca de ${metros(cm)} metros`);
+    } else if (p.confirmado && p.nivel > antes) {
+      anunciar(p, `${p.nome} ${FAIXAS[p.nivel]}, ${metros(cm)} metros`, p.nivel === 3);
+      if (VIBRA[p.nivel]) navigator.vibrate?.(VIBRA[p.nivel]);
+    }
   }
+
+  // O firmware já espera alguns segundos antes de dar a baliza como perdida
+  for (const [nome, p] of pontos) {
+    if (vistos.has(nome)) continue;
+    if (p.confirmado) anunciar(p, `${nome} fora de alcance`);
+    pontos.delete(nome);
+  }
+  render(demo === '1');
 }
 
-document.getElementById('conectar').addEventListener('click', async () => {
+$('falarTudo').addEventListener('click', falarTudo);
+
+$('conectar').addEventListener('click', async () => {
   if (!navigator.bluetooth) {
-    $nivel.textContent = 'Navegador sem Web Bluetooth. Use o Chrome no Android.';
+    $('resumo').textContent = 'Navegador sem Web Bluetooth. Use o Chrome no Android.';
     return;
   }
   try {
     const device = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE] }] });
     device.addEventListener('gattserverdisconnected', () => {
-      $nivel.textContent = 'Desconectado';
-      falar('Bracelete desconectado');
-      $status.textContent = 'Sem dados';
-      ultimoNivel = -1;
+      $('resumo').textContent = 'Desconectado';
+      $('status').textContent = 'Sem dados';
+      $('lista').innerHTML = '';
+      pontos = new Map();
       leituras = 0;
+      falar('Bracelete desconectado', true);
     });
     const server = await device.gatt.connect();
     const service = await server.getPrimaryService(SERVICE);
     const ch = await service.getCharacteristic(DIST);
     ch.addEventListener('characteristicvaluechanged', onLeitura);
     await ch.startNotifications();
-    $nivel.textContent = 'Conectado';
-    falar('Bracelete conectado');
+    $('resumo').textContent = 'Conectado';
+    falar('Bracelete conectado', true);
   } catch (e) {
-    $nivel.textContent = `Erro: ${e.message}`;
+    $('resumo').textContent = `Erro: ${e.message}`;
   }
 });
 </script>
