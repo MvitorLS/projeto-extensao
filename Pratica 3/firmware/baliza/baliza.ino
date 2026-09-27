@@ -7,7 +7,7 @@
 #include <BLEDevice.h>
 
 // Nome falado pelo celular. Máx. 15 caracteres, sem vírgula.
-#define NOME_BALIZA "Escada"
+#define NOME_BALIZA "Porta"
 
 void setup() {
   Serial.begin(115200);
@@ -22,5 +22,6 @@ void setup() {
 }
 
 void loop() {
-  delay(1000);
+  Serial.printf("Baliza BALIZA-%s anunciando (MAC BLE %s)\n", NOME_BALIZA, BLEDevice::getAddress().toString().c_str());
+  delay(2000);
 }
