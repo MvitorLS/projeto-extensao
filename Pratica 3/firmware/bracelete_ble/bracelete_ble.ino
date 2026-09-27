@@ -49,6 +49,7 @@ struct Beacon {
 struct Point {
   char name[16];
   int cm;
+  int rssi;
 };
 
 const int MAX_BEACONS = 8;
@@ -131,6 +132,7 @@ int visiblePoints(Point *out) {
     int cms[] = {demoCm(20000, 50, 600, 0), demoCm(14000, 80, 400, 5000), demoCm(26000, 150, 700, 9000)};
     for (int i = 0; i < 3; i++) {
       strlcpy(out[n].name, names[i], sizeof(out[n].name));
+      out[n].rssi = 0;
       out[n++].cm = cms[i];
     }
   } else {
@@ -143,7 +145,10 @@ int visiblePoints(Point *out) {
       rssi[n++] = beacons[i].rssi;
     }
     portEXIT_CRITICAL(&beaconsMux);
-    for (int i = 0; i < n; i++) out[i].cm = rssiToCm(rssi[i]);
+    for (int i = 0; i < n; i++) {
+      out[i].rssi = rssi[i];
+      out[i].cm = rssiToCm(rssi[i]);
+    }
   }
   for (int i = 1; i < n; i++)
     for (int j = i; j > 0 && out[j].cm < out[j - 1].cm; j--) {
@@ -226,7 +231,8 @@ void loop() {
 
   if (n == 0) Serial.println("nenhuma baliza");
   else {
-    for (int i = 0; i < n; i++) Serial.printf("%s~%dcm ", points[i].name, points[i].cm);
+    // RSSI bruto (média) para calibrar RSSI_1M: coloque a baliza a 1 m e copie o valor
+    for (int i = 0; i < n; i++) Serial.printf("%s~%dcm(%ddBm) ", points[i].name, points[i].cm, points[i].rssi);
     Serial.printf("| motor=%d%s\n", motorLevel, demoMode ? " [demo]" : "");
   }
   delay(200);

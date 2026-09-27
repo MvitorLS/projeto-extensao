@@ -12,7 +12,9 @@
 void setup() {
   Serial.begin(115200);
   BLEDevice::init("BALIZA-" NOME_BALIZA);
-  BLEDevice::setPower(ESP_PWR_LVL_N0);  // potência fixa para a estimativa de distância ser estável
+  // Potência fixa para a estimativa de distância ser estável. A antena das
+  // placas SuperMini é fraca; com 0 dBm a baliza colada parecia estar a 3 m.
+  BLEDevice::setPower(ESP_PWR_LVL_P9);
   BLEAdvertising *adv = BLEDevice::getAdvertising();
   adv->setScanResponse(true);
   adv->setMinInterval(160);  // 100 ms
