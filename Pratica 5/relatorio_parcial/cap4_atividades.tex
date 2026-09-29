@@ -35,7 +35,9 @@ Python 3 com biblioteca pyserial & Leitura e resumo dos registros da porta seria
 \hline
 Git, GitHub e GitHub Pages & Versionamento do código e hospedagem da interface em HTTPS \\
 \hline
-Motor de vibração tipo moeda e bateria LiPo 3,7~V & Previstos no projeto físico; montagem pendente \\
+Bateria LiPo 3,7~V & Prevista no projeto físico; montagem pendente \\
+\hline
+Motor de vibração tipo moeda & Uso em avaliação; saída PWM já prevista no firmware \\
 \hline
 \end{tabular}
 \normalsize
@@ -45,7 +47,7 @@ Motor de vibração tipo moeda e bateria LiPo 3,7~V & Previstos no projeto físi
 \section{Arquitetura do sistema}
 \label{sec:arquitetura}
 
-A Figura~\ref{fig:arquitetura} mostra a arquitetura adotada. As balizas apenas anunciam seu nome. O bracelete recebe esses anúncios, calcula a distância de cada baliza, aciona o motor de vibração e repassa a lista ao celular. O celular apenas recebe os dados e os apresenta ao usuário.
+A Figura~\ref{fig:arquitetura} mostra a arquitetura adotada. As balizas apenas anunciam seu nome. O bracelete recebe esses anúncios, calcula a distância de cada baliza e repassa a lista ao celular. O celular apenas recebe os dados e os apresenta ao usuário, por voz, vibração do aparelho e texto em alto contraste. O firmware já possui uma saída PWM para um motor de vibração no bracelete, cujo uso ainda está em avaliação.
 
 \begin{figure}[htb]
 \centering
@@ -57,8 +59,8 @@ A Figura~\ref{fig:arquitetura} mostra a arquitetura adotada. As balizas apenas a
     rot/.style={font=\footnotesize, align=center}
 ]
 \node[bloco] (baliza) {\textbf{Balizas BLE}\\ESP32-C3 ou \textit{beacon}\\nome \texttt{BALIZA-<Nome>}\\anúncio a cada 100~ms};
-\node[bloco, right=2.3cm of baliza] (bracelete) {\textbf{Bracelete}\\ESP32-C3\\varredura + RSSI\\motor de vibração};
-\node[bloco, right=2.3cm of bracelete] (celular) {\textbf{\textit{Smartphone}}\\página web\\lista em alto contraste\\anúncio por voz};
+\node[bloco, right=2.3cm of baliza] (bracelete) {\textbf{Bracelete}\\ESP32-C3\\varredura + RSSI\\estimativa de distância};
+\node[bloco, right=2.3cm of bracelete] (celular) {\textbf{\textit{Smartphone}}\\página web\\lista em alto contraste\\voz e vibração};
 \draw[seta] (baliza) -- node[rot, above] {anúncios\\BLE} (bracelete);
 \draw[seta] (bracelete) -- node[rot, above] {notificação\\GATT} (celular);
 \node[rot, below=0.25cm of bracelete] {sem escrita: o celular não envia comandos};
@@ -69,7 +71,7 @@ A Figura~\ref{fig:arquitetura} mostra a arquitetura adotada. As balizas apenas a
 \section{Etapa 1 -- Concepção física e mudança de escopo}
 \label{sec:etapa1}
 
-A primeira versão do projeto seguia a proposta: um sensor ultrassônico HC-SR04 mediria a distância até obstáculos e o motor vibraria com intensidade proporcional. Um primeiro firmware com essa lógica chegou a ser escrito para o ESP32. No detalhamento do projeto físico, porém, a equipe definiu o bracelete como um módulo compacto com microcontrolador, motor de vibração tipo moeda, bateria LiPo de 3,7~V e botão liga/desliga, sem sensor de distância (Figura~\ref{fig:esquema}). O HC-SR04 opera em 5~V e exige adaptação de nível para os pinos de 3,3~V do ESP32, além de ocupar um volume considerável para um dispositivo de pulso.
+A primeira versão do projeto seguia a proposta: um sensor ultrassônico HC-SR04 mediria a distância até obstáculos e o motor vibraria com intensidade proporcional. Um primeiro firmware com essa lógica chegou a ser escrito para o ESP32. No detalhamento do projeto, porém, a equipe decidiu retirar o sensor, com dois objetivos: simplificar o hardware do bracelete e concentrar a solução na comunicação sem fio que o ESP32 já oferece. A Figura~\ref{fig:esquema} mostra a concepção física elaborada nessa fase, com microcontrolador, bateria LiPo de 3,7~V, botão liga/desliga e um motor de vibração tipo moeda. O uso desse motor ainda está em avaliação pela equipe, e nesta etapa o retorno ao usuário é dado pelo celular.
 
 \begin{figure}[htb]
 \centering
@@ -112,7 +114,7 @@ Uma decisão de segurança foi tomada durante os testes. A primeira versão exib
 
 O firmware foi escrito inicialmente para o ESP32 convencional. A placa disponível, porém, era um ESP32-C3, identificado pela ferramenta \texttt{esptool}, o que exigiu três ajustes:
 \begin{itemize}
-    \item \textbf{pinos:} os GPIO 18 e 19, usados antes, correspondem ao USB nativo do C3, e os GPIO 2, 8 e 9 são pinos de inicialização. O motor foi movido para o GPIO~5;
+    \item \textbf{pinos:} os GPIO 18 e 19, usados antes, correspondem ao USB nativo do C3, e os GPIO 2, 8 e 9 são pinos de inicialização. A saída reservada ao motor foi movida para o GPIO~5;
     \item \textbf{saída serial:} foi necessário habilitar a opção \textit{USB CDC On Boot} para que a saída serial fosse enviada pela USB;
     \item \textbf{PWM:} as funções de PWM foram atualizadas para a API da versão 3 do núcleo Arduino-ESP32.
 \end{itemize}
@@ -132,7 +134,7 @@ Nesta etapa foi implementada a detecção por balizas, com dois programas:
     \item \textbf{Firmware do bracelete:} faz varredura contínua ativa, com janela de 50~ms a cada 100~ms, deixando tempo de rádio para a conexão com o celular. Ele mantém uma tabela de até oito balizas com o RSSI suavizado pela Equação~\ref{eq:ema}, usando $\alpha = 0{,}15$, e descarta a baliza que fica mais de 6~s sem ser ouvida.
 \end{itemize}
 
-A distância é calculada pela Equação~\ref{eq:distancia}, com valores iniciais $A = -59$~dBm e $n = 2{,}5$, e classificada em três faixas (até 1~m, até 2~m e até 4~m). Para evitar que a vibração e os anúncios fiquem alternando na fronteira de uma faixa, foi aplicada uma histerese: para voltar a uma faixa mais distante, a estimativa precisa ultrapassar o limite em 25\%.
+A distância é calculada pela Equação~\ref{eq:distancia}, com valores iniciais $A = -59$~dBm e $n = 2{,}5$, e classificada em três faixas (até 1~m, até 2~m e até 4~m). Para evitar que os alertas fiquem alternando na fronteira de uma faixa, foi aplicada uma histerese: para voltar a uma faixa mais distante, a estimativa precisa ultrapassar o limite em 25\%.
 
 A mensagem enviada ao celular segue o formato \texttt{<demo>|Nome:cm;Nome:cm;...}, com as balizas ordenadas da mais próxima para a mais distante e limitada ao tamanho máximo do pacote negociado na conexão (MTU). Na interface, um ponto novo só é anunciado após duas leituras seguidas. O mesmo ponto não é anunciado de novo em menos de 4~s, e as falas entram em fila em vez de interromper a anterior. Apenas a aproximação a menos de 1~m interrompe a fala em andamento, por ser o alerta mais urgente. O Apêndice~\ref{ap:codigo} traz os principais trechos do código.
 

@@ -4,7 +4,7 @@
 \section{Situação das atividades}
 \label{sec:situacao}
 
-O Quadro~\ref{qua:situacao} compara as atividades previstas na proposta com o estado atual. A parte de software está praticamente pronta. Faltam a calibração da proximidade, a montagem física do bracelete e as atividades com o público-alvo.
+O Quadro~\ref{qua:situacao} compara as atividades previstas na proposta com o estado atual. A parte de software está praticamente pronta. Faltam a calibração da proximidade, a definição do formato físico do bracelete e as atividades com o público-alvo.
 
 \begin{quadro}[htb]
 \caption{Situação das atividades previstas na proposta}
@@ -16,7 +16,7 @@ O Quadro~\ref{qua:situacao} compara as atividades previstas na proposta com o es
 \hline
 1. Pesquisa e levantamento de requisitos & Concluída & Ampliada para BLE, RSSI e Web Bluetooth após a mudança de escopo \\
 \hline
-2. Projeto e montagem do bracelete & Parcial & Projeto definido; montagem de motor, bateria e pulseira pendente \\
+2. Projeto e montagem do bracelete & Parcial & Hardware simplificado (sem sensor); bateria e pulseira pendentes; uso de motor em avaliação \\
 \hline
 3. Programação do ESP32 e integração & Concluída & Firmware do bracelete e da baliza, interface web e modo demonstração \\
 \hline
@@ -32,7 +32,7 @@ O Quadro~\ref{qua:situacao} compara as atividades previstas na proposta com o es
 \section{Considerações parciais}
 \label{sec:consideracoes-parciais}
 
-Até aqui, a ação mostrou que é possível construir, com duas placas de baixo custo e um celular comum, um sistema em que o bracelete detecta vários pontos de referência e os informa ao usuário por vibração e voz, sem aplicativo instalado e com comunicação em sentido único. A mudança de escopo, de detecção de obstáculos para orientação por balizas, manteve o objetivo geral da proposta, que é ampliar a percepção do ambiente por pessoas com baixa visão. Ela, porém, traz uma limitação que deve ficar clara: o sistema depende de o ambiente ter sido preparado com balizas e não detecta obstáculos não sinalizados.
+Até aqui, a ação mostrou que é possível construir, com duas placas de baixo custo e um celular comum, um sistema em que o bracelete detecta vários pontos de referência e os informa ao usuário no celular por voz e vibração, sem aplicativo instalado e com comunicação em sentido único. A mudança de escopo, de detecção de obstáculos para orientação por balizas, manteve o objetivo geral da proposta, que é ampliar a percepção do ambiente por pessoas com baixa visão. Ela, porém, traz uma limitação que deve ficar clara: o sistema depende de o ambiente ter sido preparado com balizas e não detecta obstáculos não sinalizados.
 
 O principal aprendizado técnico desta etapa foi a distância entre o modelo teórico de propagação e o comportamento real do hardware. A estimativa em metros, que parecia simples na Equação~\ref{eq:distancia}, mostrou-se pouco confiável com antenas pequenas, e a decisão de trocar metros por zonas veio diretamente dos testes. Outro aprendizado foi o cuidado com a informação dada ao usuário. Em uma tecnologia assistiva, anunciar ``caminho livre'' sem ter leitura, ou uma distância errada, pode ser pior do que não anunciar nada.
 
@@ -44,7 +44,7 @@ Para a formação dos extensionistas, a etapa exigiu integrar conteúdos de sist
 \begin{enumerate}
     \item \textbf{Calibração:} medir o RSSI bruto com as placas encostadas, a 1~m e a distâncias maiores, em várias orientações, para definir os limites das zonas de proximidade;
     \item \textbf{Zonas de proximidade:} substituir os metros por zonas (``muito perto'', ``perto'' e ``na sala'') no firmware e na interface;
-    \item \textbf{Montagem física:} ligar o motor de vibração com transistor de acionamento, alimentar por bateria LiPo e acomodar o conjunto em uma pulseira;
+    \item \textbf{Formato físico:} alimentar o bracelete por bateria LiPo, acomodar o conjunto em uma pulseira e concluir a avaliação sobre o uso de um motor de vibração no próprio bracelete;
     \item \textbf{Novas balizas:} gravar ou adquirir balizas para, no mínimo, três pontos de uma sala do campus;
     \item \textbf{Validação com o público-alvo:} realizar testes supervisionados com pessoas com baixa visão, colhendo sua percepção sobre a clareza dos alertas;
     \item \textbf{Apresentação e relatório final:} apresentar o protótipo à comunidade acadêmica do IFPR -- Campus Pinhais e registrar os resultados no relatório final.

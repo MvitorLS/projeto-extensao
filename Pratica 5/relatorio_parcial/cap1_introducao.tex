@@ -12,13 +12,13 @@ Este relatório parcial descreve o andamento da ação de extensão proposta na 
     \item \textbf{Público-alvo:} pessoas com baixa visão e deficiência visual que precisam de apoio para localizar pontos de referência em ambientes internos, além da comunidade técnica e escolar interessada em tecnologias assistivas abertas;
     \item \textbf{Período:} segundo semestre letivo de 2026. Este relatório cobre as atividades realizadas até o fim de setembro de 2026;
     \item \textbf{Local:} IFPR -- Campus Pinhais, com parte do desenvolvimento e dos testes realizada pelos estudantes fora do campus, com as mesmas placas e ferramentas;
-    \item \textbf{Extensionistas:} Matheus Vitor Lourenço Schionato e Vairtles Nehisen Mounkassa Liel, discentes do Bacharelado em Ciência da Computação, sob orientação do professor responsável pela disciplina.
+    \item \textbf{Extensionistas:} Matheus Vitor Lourenço Schionato e Vairtles Nehisen Mounkassa Liel, discentes do Bacharelado em Ciência da Computação, sob orientação do professor Alvaro Rogerio Cantieri.
 \end{itemize}
 
 \section{Delimitação do problema}
 \label{sec:delimitacao}
 
-A proposta original previa um bracelete com sensor ultrassônico para detectar obstáculos à frente do usuário. Durante o detalhamento do projeto físico, a equipe definiu uma configuração do bracelete composta apenas por microcontrolador, motor de vibração, bateria e botão, sem sensor de distância (Figura~\ref{fig:esquema}, no Capítulo~\ref{cap:atividades}). Sem sensor, o dispositivo não consegue medir obstáculos diretamente, e o problema precisou ser reformulado.
+A proposta original previa um bracelete com sensor ultrassônico para detectar obstáculos à frente do usuário. Durante o detalhamento do projeto, a equipe optou por retirar o sensor para simplificar o hardware e concentrar a solução na comunicação sem fio que o próprio ESP32 oferece (Figura~\ref{fig:esquema}, no Capítulo~\ref{cap:atividades}). Sem sensor, o dispositivo não consegue medir obstáculos diretamente, e o problema precisou ser reformulado.
 
 A pergunta que orienta a etapa atual passou a ser: \textit{como um dispositivo vestível sem sensor de distância pode informar a uma pessoa com baixa visão quais pontos de referência estão próximos em um ambiente, e a que distância aproximada?} A solução adotada usa o próprio rádio Bluetooth do ESP32 para detectar pequenas balizas instaladas nesses pontos, como descrito nos capítulos seguintes. Com isso, o foco da ação passou da detecção de obstáculos suspensos para a \textbf{orientação em ambientes internos preparados com balizas}.
 
