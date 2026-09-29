@@ -1,0 +1,50 @@
+\chapter{FUNDAMENTAÇÃO TÉCNICA}
+\label{cap:fundamentacao}
+
+Este capítulo resume os conceitos usados no protótipo. O objetivo não é esgotar os temas, e sim registrar a base que orientou as decisões de projeto descritas no Capítulo~\ref{cap:atividades}.
+
+\section{Tecnologia assistiva e auxílios eletrônicos à mobilidade}
+\label{sec:ta}
+
+Tecnologia assistiva é a área que reúne recursos e serviços que ampliam habilidades funcionais de pessoas com deficiência e, com isso, promovem autonomia e inclusão \cite{bersch2017}. \citeonline{cook2014} destacam que um recurso assistivo precisa ser avaliado junto com o usuário e o contexto de uso, e não apenas pelo desempenho técnico. No caso da deficiência visual, os auxílios eletrônicos à mobilidade costumam complementar a bengala e o cão-guia, e não substituí-los. Levantamentos como os de \citeonline{dakopoulos2010} e \citeonline{bhowmick2017} mostram que muitos desses dispositivos esbarram em custo, peso e dificuldade de interpretação dos alertas. Por isso, a proposta prioriza componentes baratos e sinais simples, como vibração e voz.
+
+\section{Bluetooth Low Energy}
+\label{sec:ble}
+
+O \textit{Bluetooth Low Energy} (BLE) é a variante de baixo consumo do padrão Bluetooth \cite{bluetooth2023core}. Dois mecanismos do BLE são usados no protótipo:
+
+\begin{itemize}
+    \item \textbf{Anúncios (\textit{advertising}):} um dispositivo transmite periodicamente pacotes curtos com seu nome e outros dados, sem precisar de conexão. Qualquer receptor próximo pode fazer uma varredura (\textit{scan}) e registrar esses pacotes junto com a intensidade do sinal recebido. As balizas do projeto funcionam apenas dessa forma;
+    \item \textbf{Conexão e GATT:} depois de conectados, os dispositivos trocam dados organizados em serviços e características, identificados por UUID. Uma característica com a propriedade \textit{notify} permite que o periférico envie valores ao celular sempre que houver dados novos, sem que o celular precise solicitar cada leitura.
+\end{itemize}
+
+O protótipo usa uma característica apenas de leitura e notificação, sem permissão de escrita. Dessa forma, o fluxo de dados é unidirecional, do bracelete para o celular, e o celular não envia comandos ao bracelete. O único dado enviado pelo celular é a inscrição nas notificações, que faz parte do próprio protocolo.
+
+\section{Estimativa de distância pelo RSSI}
+\label{sec:rssi}
+
+O RSSI (\textit{Received Signal Strength Indicator}) indica a potência com que um pacote foi recebido, em dBm. Como o sinal enfraquece com a distância, é possível estimar a distância entre transmissor e receptor pelo modelo de perda de percurso log-distância, amplamente usado em localização com balizas BLE \cite{faragher2015}:
+
+\begin{equation}
+    d = 10^{\frac{A - R}{10\,n}}
+    \label{eq:distancia}
+\end{equation}
+
+\noindent em que $d$ é a distância em metros, $A$ é o RSSI medido a 1~m da baliza, $R$ é o RSSI observado e $n$ é o expoente de perda de percurso, que vale cerca de 2 em espaço livre e fica entre 2,5 e 4 em ambientes internos. \citeonline{faragher2015} mostram que o RSSI de balizas BLE varia bastante de uma amostra para outra, principalmente por reflexões no ambiente e pela absorção do corpo humano. Por isso, as leituras precisam ser suavizadas. O protótipo usa uma média móvel exponencial:
+
+\begin{equation}
+    R_k = R_{k-1} + \alpha\,(r_k - R_{k-1})
+    \label{eq:ema}
+\end{equation}
+
+\noindent em que $r_k$ é a amostra recebida, $R_k$ é o valor suavizado e $\alpha$ (entre 0 e 1) controla o peso da amostra nova. Valores menores de $\alpha$ deixam a estimativa mais estável, mas mais lenta para reagir à aproximação do usuário.
+
+\section{Web Bluetooth e síntese de voz}
+\label{sec:web}
+
+A interface do celular foi feita como página web, sem aplicativo nativo. A API Web Bluetooth \cite{w3c2024webbluetooth} permite que uma página conecte-se a um dispositivo BLE e receba notificações GATT. Ela está disponível no navegador Chrome para Android e exige que a página seja servida por HTTPS. A API de síntese de voz (\textit{Web Speech API}) \cite{wicg2024speech} converte texto em fala usando a voz do próprio sistema, o que permite anunciar os pontos detectados em português sem serviços externos.
+
+\section{Plataforma ESP32-C3}
+\label{sec:esp32c3}
+
+O ESP32-C3 é um microcontrolador de núcleo único RISC-V, com 400~KB de SRAM, Wi-Fi e Bluetooth LE 5 integrados e controlador USB nativo \cite{espressif2024esp32c3}. A versão usada é uma placa compacta do tipo ``SuperMini'', com 4~MB de memória flash e antena impressa na própria placa. O tamanho reduzido favorece o uso em um bracelete. Por outro lado, a antena pequena influencia diretamente a qualidade do RSSI, como discutido no Capítulo~\ref{cap:resultados}. O firmware foi escrito em C++ com o núcleo Arduino para ESP32 \cite{espressif2026arduino}.

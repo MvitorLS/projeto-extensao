@@ -1,0 +1,48 @@
+\documentclass[12pt, openright, oneside, a4paper, english, brazilian]{abntex2}
+
+\input{pacotes.tex}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usepackage{listings}
+\usetikzlibrary{positioning, arrows.meta, shapes.geometric}
+\input{configuracoes_ifpr.tex}
+
+\titulo{RELATÓRIO PARCIAL DE ATIVIDADES DE EXTENSÃO: BRACELETE INTELIGENTE COM ESP32 PARA AUXÍLIO À ORIENTAÇÃO DE PESSOAS COM BAIXA VISÃO}
+\tipotrabalho{Relatório Parcial de Atividades de Extensão}
+\preambulo{Relatório parcial de atividades extensionistas apresentado à disciplina de Práticas de Extensão V, do curso de Bacharelado em Ciência da Computação do Instituto Federal do Paraná, Campus Pinhais, sob a orientação do professor responsável.}
+
+\begin{document}
+
+\selectlanguage{brazilian}
+\frenchspacing
+
+\imprimircapa
+\imprimirfolhaderosto
+
+\input{relatorio_parcial/resumo.tex}
+\input{relatorio_parcial/listas.tex}
+
+\pdfbookmark[0]{\contentsname}{toc}
+\tableofcontents*
+\cleardoublepage
+
+\textual
+
+\input{relatorio_parcial/cap1_introducao.tex}
+\input{relatorio_parcial/cap2_objetivos.tex}
+\input{relatorio_parcial/cap3_fundamentacao.tex}
+\input{relatorio_parcial/cap4_atividades.tex}
+\input{relatorio_parcial/cap5_resultados.tex}
+\input{relatorio_parcial/cap6_consideracoes.tex}
+
+\postextual
+
+\bibliography{referencias/referencias}
+
+\begin{apendicesenv}
+\partapendices
+\input{relatorio_parcial/apendice_a_iag.tex}
+\input{relatorio_parcial/apendice_b_codigo.tex}
+\end{apendicesenv}
+
+\end{document}

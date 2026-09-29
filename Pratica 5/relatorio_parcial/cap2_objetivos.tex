@@ -1,0 +1,39 @@
+\chapter{OBJETIVOS}
+\label{cap:objetivos}
+
+\section{Objetivo geral}
+\label{sec:objetivo-geral}
+
+Desenvolver e testar um protótipo de bracelete inteligente baseado em ESP32 para auxiliar pessoas com baixa visão na percepção e na orientação em um ambiente.
+
+\section{Objetivos específicos}
+\label{sec:objetivos-especificos}
+
+Os objetivos específicos da proposta foram mantidos. O Quadro~\ref{qua:objetivos} relaciona cada um deles ao ajuste feito após a mudança de escopo e à situação atual.
+
+\begin{quadro}[htb]
+\caption{Objetivos específicos, ajustes e situação atual}
+\label{qua:objetivos}
+\small
+\begin{tabular}{|p{5.2cm}|p{6.2cm}|p{2.6cm}|}
+\hline
+\textbf{Objetivo da proposta} & \textbf{Ajuste após a mudança de escopo} & \textbf{Situação} \\
+\hline
+Estudar tecnologias de sensores e atuadores para um dispositivo vestível & Estudo passou a incluir BLE, estimativa de distância por RSSI e Web Bluetooth & Concluído \\
+\hline
+Projetar a estrutura do bracelete e a disposição dos componentes & Configuração sem sensor: ESP32-C3, motor de vibração, bateria e botão & Concluído \\
+\hline
+Implementar no ESP32 a leitura e o processamento das informações & Leitura dos anúncios das balizas e cálculo da distância aproximada & Concluído \\
+\hline
+Desenvolver mecanismos de alerta de fácil interpretação & Vibração no bracelete e anúncio por voz no celular & Parcial (motor não montado) \\
+\hline
+Realizar testes controlados de detecção & Testes de comunicação e de detecção de balizas & Em andamento \\
+\hline
+Avaliar limitações e identificar melhorias & Instabilidade do RSSI identificada; proposta de zonas de proximidade & Em andamento \\
+\hline
+Registrar e apresentar o protótipo & Este relatório; apresentação prevista para a etapa final & Em andamento \\
+\hline
+\end{tabular}
+\normalsize
+\fonte{Elaborado pelos autores (2026).}
+\end{quadro}

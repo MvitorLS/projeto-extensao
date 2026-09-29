@@ -1,0 +1,77 @@
+\chapter{Principais trechos do firmware do bracelete}
+\label{ap:codigo}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  columns=fullflexible,
+  keepspaces=true,
+  frame=single,
+  breaklines=true,
+  showstringspaces=false,
+  language=C++
+}
+
+Os trechos a seguir foram extraídos do firmware do bracelete (\texttt{bracelete\_ble.ino}). O código completo, o firmware da baliza e a interface web estão no repositório do projeto.
+
+\section{Recebimento dos anúncios e suavização do RSSI}
+
+A cada anúncio recebido, o bracelete verifica se o nome começa com \texttt{BALIZA-} e atualiza o RSSI suavizado da baliza correspondente (Equação~\ref{eq:ema}).
+
+\begin{lstlisting}
+void onResult(BLEAdvertisedDevice dev) override {
+  if (!dev.haveName()) return;
+  String full = dev.getName();
+  if (!full.startsWith(BEACON_PREFIX)) return;
+  String name = full.substring(strlen(BEACON_PREFIX));
+  int rssi = dev.getRSSI();
+  ...
+  if (slot < 0) {                       // baliza nova
+    strlcpy(beacons[slot].name, name.c_str(), sizeof(beacons[slot].name));
+    beacons[slot].rssi = rssi;
+  } else {                              // media movel exponencial
+    beacons[slot].rssi += RSSI_ALPHA * (rssi - beacons[slot].rssi);
+  }
+  beacons[slot].lastSeen = now;
+}
+\end{lstlisting}
+
+\section{Estimativa de distância e histerese}
+
+\begin{lstlisting}
+int rssiToCm(float rssi) {              // Equacao (1), em centimetros
+  return 100 * pow(10, (RSSI_1M - rssi) / (10 * PATH_LOSS_N));
+}
+
+const int LIMITS[] = {400, 200, 100};   // faixas: 4 m, 2 m e 1 m
+
+int levelWithHysteresis(int cm, int current) {
+  int level = 0;
+  for (int i = 0; i < 3; i++) if (cm <= LIMITS[i]) level = i + 1;
+  if (level < current && cm <= LIMITS[current - 1] * 1.25) return current;
+  return level;
+}
+\end{lstlisting}
+
+\section{Característica sem escrita e envio ao celular}
+
+A característica é criada apenas com leitura e notificação, o que garante o fluxo em sentido único. No laço principal, a lista de balizas é montada da mais próxima para a mais distante e enviada a cada 500~ms.
+
+\begin{lstlisting}
+distChar = service->createCharacteristic(
+    DIST_CHAR_UUID,
+    BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+
+// laco principal: "<demo>|Nome:cm;Nome:cm;..."
+String payload = String(demoMode ? 1 : 0) + "|";
+if (connected && now - lastNotify >= NOTIFY_MS) {
+  size_t maxLen = server->getPeerMTU(server->getConnId()) - 3;
+  for (int i = 0; i < n; i++) {
+    String item = String(i ? ";" : "") + points[i].name + ":" + points[i].cm;
+    if (payload.length() + item.length() > maxLen) break;
+    payload += item;
+  }
+  distChar->setValue(payload.c_str());
+  distChar->notify();
+  lastNotify = now;
+}
+\end{lstlisting}

@@ -1,0 +1,127 @@
+\chapter{RESULTADOS PARCIAIS E DISCUSSÃO}
+\label{cap:resultados}
+
+Este capítulo apresenta os resultados obtidos até o momento. Os testes realizados são funcionais e exploratórios, feitos pela equipe em ambiente doméstico e de laboratório. Ainda não houve testes com pessoas do público-alvo, previstos para a etapa final.
+
+\section{Compilação e uso de memória}
+\label{sec:res-memoria}
+
+A Tabela~\ref{tab:memoria} mostra o espaço de memória de programa ocupado por cada versão do firmware. Todas as versões compilaram sem erros e ocupam menos da metade da área disponível no ESP32-C3, o que deixa margem para as próximas funcionalidades.
+
+\begin{table}[htb]
+\centering
+\caption{Memória de programa ocupada por versão do firmware}
+\label{tab:memoria}
+\small
+\begin{tabular}{lcrr}
+\toprule
+\textbf{Versão} & \textbf{Placa} & \textbf{Bytes} & \textbf{Uso} \\
+\midrule
+Protótipo inicial (sensor + BLE) & ESP32 & 1.104.594 & 84\% \\
+Bracelete com sensor + BLE & ESP32-C3 & 639.133 & 48\% \\
+Bracelete com balizas (atual) & ESP32-C3 & 651.955 & 49\% \\
+Baliza & ESP32-C3 & 617.933 & 47\% \\
+\bottomrule
+\end{tabular}
+\normalsize
+\fonte{Saída do compilador \texttt{arduino-cli}. Área máxima de programa: 1.310.720 bytes.}
+\end{table}
+
+\section{Comunicação bracelete $\rightarrow$ celular}
+\label{sec:res-comunicacao}
+
+O bracelete foi encontrado pelo aplicativo nRF Connect com o nome \texttt{Bracelete-ESP32}, e as notificações chegaram continuamente após a inscrição. Em seguida, a interface web publicada no GitHub Pages conectou-se ao bracelete pelo Chrome no Android, anunciou ``Bracelete conectado'' por voz e passou a exibir os dados recebidos. Durante o teste, a primeira versão da interface aparentava estar parada, porque só falava quando o valor mudava. Foi então adicionado um contador de leituras recebidas, que mostra ao usuário que a conexão está ativa. O modo demonstração foi verificado pela saída serial: após o acionamento do botão, as 898 linhas registradas em 90~s indicavam o modo ativo, com a distância simulada variando como esperado.
+
+\section{Detecção de balizas simuladas}
+\label{sec:res-simuladas}
+
+No primeiro teste com balizas, o notebook anunciou uma baliza chamada ``Mesa'', que o bracelete detectou em 94 leituras consecutivas, com distância estimada de cerca de 1,36~m. Em seguida, o notebook anunciou duas balizas ao mesmo tempo (``Porta'' e ``Mesa''). A Tabela~\ref{tab:duas-balizas} resume os registros coletados após os primeiros 8~s, descartados para estabilização.
+
+\begin{table}[htb]
+\centering
+\caption{Detecção simultânea de duas balizas simuladas pelo notebook}
+\label{tab:duas-balizas}
+\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Baliza} & \textbf{Leituras} & \textbf{Mínimo (cm)} & \textbf{Mediana (cm)} & \textbf{Máximo (cm)} \\
+\midrule
+Porta & 182 & 90 & 109 & 124 \\
+Mesa & 168 & 123 & 129 & 138 \\
+\bottomrule
+\end{tabular}
+\normalsize
+\fonte{Registros da porta serial do bracelete, coletados pelos autores (2026).}
+\end{table}
+
+As duas balizas foram detectadas simultaneamente, e as estimativas de cada uma variaram pouco, com amplitude de no máximo 34~cm. No entanto, as duas vinham do mesmo adaptador Bluetooth, portanto estavam exatamente à mesma distância física, e ainda assim as medianas diferiram em 20~cm. Isso mostra que, mesmo em condição controlada, a estimativa depende de fatores além da distância. Também foram registradas 10 entradas e saídas de balizas na lista durante o teste. Parte delas pode ser atribuída ao notebook, que alterna entre os dois anúncios, e parte à própria varredura do bracelete, que escuta o rádio em apenas metade do tempo para manter a conexão com o celular. Esse comportamento motivou os ajustes da Etapa~6: tempo de 6~s para descartar uma baliza, confirmação em duas leituras e fila de falas.
+
+\section{Detecção com baliza real e estimativa de distância}
+\label{sec:res-real}
+
+Com a segunda placa ESP32-C3 gravada como baliza ``Porta'', o bracelete detectou a baliza e a interface passou a anunciá-la. A distância exibida, porém, ficou longe da real. A Tabela~\ref{tab:baliza-real} reúne as observações feitas pela interface. A coluna de RSSI equivalente foi calculada invertendo a Equação~\ref{eq:distancia} com $A=-59$~dBm e $n=2{,}5$.
+
+\begin{table}[htb]
+\centering
+\caption{Distância indicada pela interface com a baliza real}
+\label{tab:baliza-real}
+\small
+\begin{tabular}{p{3.3cm}p{3.2cm}cc}
+\toprule
+\textbf{Potência da baliza} & \textbf{Distância real} & \textbf{Indicada} & \textbf{RSSI equivalente} \\
+\midrule
+0 dBm & placas encostadas & $\approx$ 3~m & $\approx -71$~dBm \\
++9 dBm & $\approx$ 30~cm & $\approx$ 1,5~m & $\approx -63$~dBm \\
++9 dBm & 1~m & $\approx$ 20~m & $\approx -92$~dBm \\
+\bottomrule
+\end{tabular}
+\normalsize
+\fonte{Observações dos autores na interface web (2026). Valores arredondados pela interface a cada 0,5~m.}
+\end{table}
+
+O aumento da potência de transmissão da baliza de 0 para +9~dBm melhorou a detecção a curta distância, mas não resolveu a estimativa. Entre cerca de 30~cm e 1~m, o modelo prevê uma queda de aproximadamente 13~dB no RSSI ($25 \cdot \log_{10}(1/0{,}3)$). A queda equivalente observada foi de cerca de 28~dB, mais que o dobro. Esse resultado é coerente com o que \citeonline{faragher2015} relatam sobre a variabilidade do RSSI, agravada aqui por dois fatores:
+\begin{itemize}
+    \item a antena impressa das placas SuperMini é pequena, e a orientação relativa das placas altera bastante o sinal recebido;
+    \item o valor de $A=-59$~dBm foi adotado como estimativa inicial, sem medição com o par de placas usado.
+\end{itemize}
+A calibração com leituras brutas de RSSI em posições conhecidas ficou pendente, porque exige o bracelete conectado ao computador por cabo de dados durante a medição.
+
+A conclusão parcial é que, com o hardware atual, \textbf{informar a distância em metros não é confiável} e pode confundir o usuário. Por outro lado, o sinal permite distinguir situações bem diferentes, como a baliza encostada, na mesma área ou distante. Por isso, a próxima versão substituirá os metros por zonas de proximidade (``muito perto'', ``perto'' e ``na sala''), com limites de RSSI definidos por medição.
+
+\section{Dificuldades encontradas e soluções}
+\label{sec:res-dificuldades}
+
+O Quadro~\ref{qua:dificuldades} resume os principais problemas técnicos encontrados até aqui e como foram resolvidos.
+
+\begin{quadro}[htb]
+\caption{Dificuldades encontradas e soluções adotadas}
+\label{qua:dificuldades}
+\small
+\begin{tabular}{|p{6.4cm}|p{7.6cm}|}
+\hline
+\textbf{Dificuldade} & \textbf{Solução} \\
+\hline
+Placa disponível era ESP32-C3, com GPIO 18/19 ligados ao USB & Remapeamento dos pinos (motor no GPIO~5) e compilação para o C3 \\
+\hline
+Saída serial não aparecia pela USB & Opção \textit{USB CDC On Boot} habilitada na compilação \\
+\hline
+Funções de PWM removidas na versão 3 do núcleo & Uso da nova API \texttt{ledcAttach}/\texttt{ledcWrite} \\
+\hline
+Publicação da página no GitHub Pages falhava & Desativação do processamento Jekyll com o arquivo \texttt{.nojekyll} \\
+\hline
+Interface anunciava ``Caminho livre'' sem leitura & Estado próprio para ausência de dados, sem anúncio de caminho livre \\
+\hline
+Botão do modo demonstração perdia toques rápidos & Leitura do botão por interrupção em vez de consulta no laço principal \\
+\hline
+Baliza aparecia e sumia; falas interrompidas & Suavização do RSSI, 6~s para descartar, histerese de 25\%, confirmação em duas leituras e fila de falas \\
+\hline
+Placa da baliza reiniciava em modo de gravação & Reconexão do cabo USB sem acionar o botão BOOT (pino de inicialização GPIO~9) \\
+\hline
+Lista de balizas maior que o pacote BLE padrão & Aumento do MTU para 247 bytes e corte da lista no limite negociado \\
+\hline
+Distância em metros instável com placas SuperMini & Aumento da potência da baliza para +9~dBm; troca por zonas de proximidade em andamento \\
+\hline
+\end{tabular}
+\normalsize
+\fonte{Elaborado pelos autores (2026).}
+\end{quadro}

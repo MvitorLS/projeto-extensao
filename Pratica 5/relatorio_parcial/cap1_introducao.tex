@@ -1,0 +1,28 @@
+\chapter{INTRODUÇÃO}
+\label{cap:introducao}
+
+A locomoção independente em ambientes internos ainda é uma dificuldade cotidiana para pessoas com baixa visão. Segundo a \citeonline{oms2019vision}, pelo menos 2,2 bilhões de pessoas no mundo têm algum tipo de deficiência visual, e boa parte delas mantém resíduo visual que não é suficiente para identificar com segurança portas, móveis e outros pontos de referência. No Brasil, a Lei Brasileira de Inclusão \cite{brasil2015lbi} assegura o direito à acessibilidade e reconhece a tecnologia assistiva como meio de ampliar a autonomia dessas pessoas.
+
+Este relatório parcial descreve o andamento da ação de extensão proposta na disciplina de Práticas de Extensão III e executada na disciplina de Práticas de Extensão V do curso de Bacharelado em Ciência da Computação do IFPR -- Campus Pinhais. A ação consiste no desenvolvimento de um protótipo de bracelete inteligente baseado no microcontrolador ESP32, de baixo custo e com componentes comerciais, que auxilie pessoas com baixa visão a se orientar em um ambiente.
+
+\section{Identificação da ação extensionista}
+\label{sec:identificacao}
+
+\begin{itemize}
+    \item \textbf{Público-alvo:} pessoas com baixa visão e deficiência visual que precisam de apoio para localizar pontos de referência em ambientes internos, além da comunidade técnica e escolar interessada em tecnologias assistivas abertas;
+    \item \textbf{Período:} segundo semestre letivo de 2026. Este relatório cobre as atividades realizadas até o fim de setembro de 2026;
+    \item \textbf{Local:} IFPR -- Campus Pinhais, com parte do desenvolvimento e dos testes realizada pelos estudantes fora do campus, com as mesmas placas e ferramentas;
+    \item \textbf{Extensionistas:} Matheus Vitor Lourenço Schionato e Vairtles Nehisen Mounkassa Liel, discentes do Bacharelado em Ciência da Computação, sob orientação do professor responsável pela disciplina.
+\end{itemize}
+
+\section{Delimitação do problema}
+\label{sec:delimitacao}
+
+A proposta original previa um bracelete com sensor ultrassônico para detectar obstáculos à frente do usuário. Durante o detalhamento do projeto físico, a equipe definiu uma configuração do bracelete composta apenas por microcontrolador, motor de vibração, bateria e botão, sem sensor de distância (Figura~\ref{fig:esquema}, no Capítulo~\ref{cap:atividades}). Sem sensor, o dispositivo não consegue medir obstáculos diretamente, e o problema precisou ser reformulado.
+
+A pergunta que orienta a etapa atual passou a ser: \textit{como um dispositivo vestível sem sensor de distância pode informar a uma pessoa com baixa visão quais pontos de referência estão próximos em um ambiente, e a que distância aproximada?} A solução adotada usa o próprio rádio Bluetooth do ESP32 para detectar pequenas balizas instaladas nesses pontos, como descrito nos capítulos seguintes. Com isso, o foco da ação passou da detecção de obstáculos suspensos para a \textbf{orientação em ambientes internos preparados com balizas}.
+
+\section{Organização do relatório}
+\label{sec:organizacao}
+
+O Capítulo~\ref{cap:objetivos} retoma os objetivos da ação e indica os ajustes decorrentes da mudança de escopo. O Capítulo~\ref{cap:fundamentacao} reúne os conceitos técnicos usados no protótipo. O Capítulo~\ref{cap:atividades} descreve os materiais e as atividades realizadas. O Capítulo~\ref{cap:resultados} apresenta os resultados parciais dos testes e as dificuldades encontradas, e o Capítulo~\ref{cap:consideracoes} traz as considerações parciais e as próximas etapas.
